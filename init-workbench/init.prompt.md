@@ -245,6 +245,24 @@ If the created directory is nested incorrectly, move it to `${TARGET_CWD}` or to
 
 Set `WB_DIR` to the final path.
 
+### 3.2b — Tag repo with `ai-workbench` topic
+
+Tag the new repo so org-wide tooling (for example, the weekly steering-overlay aggregator in the template repo) can discover every stamped workbench across the org by topic.
+
+```bash
+gh repo edit "${ORG}/${REPO_NAME}" --add-topic ai-workbench
+```
+
+`--add-topic` is idempotent. Re-running on a repo that already has the topic is a no-op and does not fail. Safe to retry after a failed stamp.
+
+Verify:
+
+```bash
+gh repo view "${ORG}/${REPO_NAME}" --json repositoryTopics
+```
+
+The output must include `ai-workbench` in `repositoryTopics`. The topic is the stable contract for discovery, so do not skip this step even if the template repo moves orgs later.
+
 ### 3.3 — Add upstream remote to the template
 
 ```bash
