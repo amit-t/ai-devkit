@@ -1,0 +1,12 @@
+title: AI Devkit
+description: Global CLI for bootstrapping per-bundle AI workbenches — init.wb, join.wb, update.wb, orgs.wb. Pairs with ai-workbench template and ai-ralph autonomous loop.
+plugins:
+  - jekyll-seo-tag
+
+show_downloads: false
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
