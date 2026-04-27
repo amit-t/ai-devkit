@@ -13,6 +13,15 @@ RALPH_REPO_SLUG="ai-ralph"
 RALPH_LOCAL_DIR="${TOOLS_PARENT}/ai-ralph"   # sibling of ai-devkit
 ```
 
+After the comprehensive Step 0 below installs ralph globally, also verify it supports workspace mode:
+
+```bash
+ralph --help 2>&1 | grep -q -- '--workspace' || {
+  echo "Installed ralph does not support --workspace. Update ai-ralph and re-run install.sh:"
+  echo "  cd ${RALPH_LOCAL_DIR} && git pull && bash install.sh"
+  exit 1
+}
+
 ---
 
 ## Step 0 — Preflight
@@ -157,7 +166,7 @@ If `RALPH_INSTALLED=0`:
    ```
 4. Verify `ralph-enable` resolves. If missing, warn to add `~/.local/bin` to PATH.
 
-**Do NOT run `ralph-enable` in the workbench** — initiator already enabled and committed `.ralph/` config. The joiner only needs the global install so `ralph` / `rp*` commands work on this machine.
+Initiator already enabled the ralph workspace at `repos/.ralph/` (init.wb Step 3.4b). The joiner needs the global ralph install so `wb.ralph-plan` / `wb.ralph-dispatch` work on this machine. Step 4b below will re-verify with `scripts/ralph-enable-check.sh` and bootstrap the workspace if a joiner pulled an older workbench predating Step 3.4b.
 
 ---
 
@@ -224,6 +233,25 @@ For each new repo:
 
 ```bash
 git clone "${url}" "${WB_DIR}/repos/${name}"
+```
+
+---
+
+## Step 4b — Verify ralph workspace is enabled
+
+The initiator should have run `ralph enable --workspace` during `init.wb`. If a joiner pulled an older workbench predating that step, bootstrap workspace mode now (idempotent):
+
+```bash
+mkdir -p "${WB_DIR}/repos"
+"${WB_DIR}/scripts/ralph-enable-check.sh" >/dev/null 2>&1 || {
+  echo "Ralph workspace not enabled yet. Bootstrapping at ${WB_DIR}/repos/..."
+  (cd "${WB_DIR}/repos" && ralph enable --workspace --non-interactive --skip-tasks)
+  grep -q '^WORKSPACE_MODE=true' "${WB_DIR}/repos/.ralphrc" || {
+    echo "ralph enable --workspace did not set WORKSPACE_MODE=true; abort"
+    exit 1
+  }
+  "${WB_DIR}/scripts/ralph-enable-check.sh"
+}
 ```
 
 ---
