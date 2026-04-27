@@ -2,6 +2,7 @@
 title: Home
 layout: default
 ---
+{% include links.html %}
 
 ## What ai-devkit Gives You
 
@@ -10,15 +11,15 @@ layout: default
 - **Template refresh** — `update.wb` pulls template-owned skill / config updates without touching your authored outputs.
 - **Org list management** — `orgs.wb` (list/add/remove/show) keeps a machine-local GitHub org list. The org hosting your devkit checkout is auto-included.
 - **Preflight hygiene** — both `init.wb` and `join.wb` verify required CLIs, confirm the active `gh` account, and offer switch / login flows before touching remote resources.
-- **ai-ralph bootstrap** — on first run per machine, devkit clones and installs [`ai-ralph`](https://github.com/amit-t/ai-ralph), then scopes `ralph-enable` to the new workbench only (never into sibling service repos).
+- **ai-ralph bootstrap** — on first run per machine, devkit clones and installs [`ai-ralph`]({{ links.ai_ralph_repo }}), then scopes `ralph-enable` to the new workbench only (never into sibling service repos).
 
 ## Three Repos, One Story
 
 | Repo | Role |
 |------|------|
-| [`ai-devkit`](https://github.com/amit-t/ai-devkit) | Global CLI. Provides `init.wb`, `join.wb`, `update.wb`, `orgs.wb`. |
-| [`ai-workbench`](https://github.com/amit-t/ai-workbench) | Template. `gh repo create --template` stamps an instance per bundle. |
-| [`ai-ralph`](https://github.com/amit-t/ai-ralph) | Autonomous AI loop (Claude Code, Devin, Codex). Enabled per workbench. |
+| [`ai-devkit`]({{ links.ai_devkit_repo }}) | Global CLI. Provides `init.wb`, `join.wb`, `update.wb`, `orgs.wb`. |
+| [`ai-workbench`]({{ links.ai_workbench_repo }}) | Template. `gh repo create --template` stamps an instance per bundle. |
+| [`ai-ralph`]({{ links.ai_ralph_repo }}) | Autonomous AI loop (Claude Code, Devin, Codex). Enabled per workbench. |
 
 ## Quick Paths
 

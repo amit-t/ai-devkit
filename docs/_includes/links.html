@@ -1,0 +1,17 @@
+{%- comment -%}
+  Resolves the per-owner link bundle from _data/orgs.yml using the owner slug
+  that GitHub Pages reports for whichever fork is publishing this build.
+
+  Sets `links` for callers. Falls back to amit-t when:
+    - building locally without the github-metadata plugin populated
+    - publishing from an owner not yet listed in _data/orgs.yml
+
+  Usage:
+    {%- include links.html -%}
+    <a href="{{ links.ai_ralph_repo }}">ai-ralph</a>
+{%- endcomment -%}
+{%- assign owner = site.github.owner_name | default: site.fallback_owner | default: 'amit-t' -%}
+{%- assign links = site.data.orgs[owner] -%}
+{%- if links == nil -%}
+  {%- assign links = site.data.orgs[site.fallback_owner | default: 'amit-t'] -%}
+{%- endif -%}

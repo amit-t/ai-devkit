@@ -4,6 +4,7 @@ layout: default
 eyebrow: Setup
 subtitle: Clone, install, first workbench.
 ---
+{% include links.html %}
 
 ## Prerequisites
 
@@ -16,13 +17,13 @@ subtitle: Clone, install, first workbench.
 
 Optional but recommended:
 
-- [`ai-ralph`](https://github.com/amit-t/ai-ralph) — installed automatically by `init.wb` / `join.wb` on first run per machine.
+- [`ai-ralph`]({{ links.ai_ralph_repo }}) — installed automatically by `init.wb` / `join.wb` on first run per machine.
 - `devin` or `claude` CLI — drives the interview agent. Devin by default, Claude as fallback.
 
 ## Install
 
 ```bash
-git clone https://github.com/amit-t/ai-devkit.git ~/Projects/Tools-Utilities/ai-devkit
+git clone {{ links.ai_devkit_clone }} ~/Projects/Tools-Utilities/ai-devkit
 cd ~/Projects/Tools-Utilities/ai-devkit
 ./install.zsh
 ```
@@ -87,5 +88,5 @@ Preflight runs, you get appended to CODEOWNERS, any extra repos you bring get re
 
 - [Commands]({{ '/commands.html' | relative_url }}) — full CLI reference
 - [Orgs]({{ '/orgs.html' | relative_url }}) — machine-local GitHub org list
-- [ai-workbench docs](https://amit-t.github.io/ai-workbench/) — what lives inside the workbench template
-- [ai-ralph README](https://github.com/amit-t/ai-ralph) — autonomous loop engines
+- [ai-workbench docs]({{ links.ai_workbench_pages }}) — what lives inside the workbench template
+- [ai-ralph README]({{ links.ai_ralph_repo }}) — autonomous loop engines

@@ -1,3 +1,4 @@
+{%- include links.html -%}
 <!DOCTYPE html>
 <html lang="{{ site.lang | default: 'en' }}">
 <head>
@@ -20,9 +21,9 @@
     <a href="{{ '/getting-started.html' | relative_url }}">Getting Started</a>
     <a href="{{ '/commands.html' | relative_url }}">Commands</a>
     <a href="{{ '/orgs.html' | relative_url }}">Orgs</a>
-    <a href="https://amit-t.github.io/ai-workbench/" target="_blank" rel="noreferrer">ai-workbench</a>
-    <a href="https://github.com/amit-t/ai-ralph" target="_blank" rel="noreferrer">ai-ralph</a>
-    <a href="https://github.com/amit-t/ai-devkit" target="_blank" rel="noreferrer">GitHub</a>
+    <a href="{{ links.ai_workbench_pages }}" target="_blank" rel="noreferrer">ai-workbench</a>
+    <a href="{{ links.ai_ralph_repo }}" target="_blank" rel="noreferrer">ai-ralph</a>
+    <a href="{{ links.ai_devkit_repo }}" target="_blank" rel="noreferrer">GitHub</a>
   </nav>
 
   {% assign is_home = false %}
@@ -57,7 +58,7 @@
         <div class="hero-actions">
           <a class="neo-btn neo-btn-primary" href="{{ '/getting-started.html' | relative_url }}">Install</a>
           <a class="neo-btn" href="{{ '/commands.html' | relative_url }}">Commands</a>
-          <a class="neo-btn" href="https://github.com/amit-t/ai-devkit" target="_blank" rel="noreferrer">GitHub</a>
+          <a class="neo-btn" href="{{ links.ai_devkit_repo }}" target="_blank" rel="noreferrer">GitHub</a>
         </div>
       </div>
     </header>
@@ -80,9 +81,9 @@
   <footer class="container footer">
     <p>
       <code>ai-devkit</code> — global CLI for AI workbenches. Pair with the
-      <a href="https://github.com/amit-t/ai-workbench">ai-workbench</a> template and
-      <a href="https://github.com/amit-t/ai-ralph">ai-ralph</a> autonomous loop.
-      Source on <a href="https://github.com/amit-t/ai-devkit">GitHub</a>.
+      <a href="{{ links.ai_workbench_repo }}">ai-workbench</a> template and
+      <a href="{{ links.ai_ralph_repo }}">ai-ralph</a> autonomous loop.
+      Source on <a href="{{ links.ai_devkit_repo }}">GitHub</a>.
     </p>
   </footer>
 
