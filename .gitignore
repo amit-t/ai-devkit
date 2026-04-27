@@ -2,3 +2,13 @@
 *.swp
 .tmp/
 *.local.*
+
+# Jekyll docs site
+docs/_site/
+docs/_site_local/
+docs/_site_inv/
+docs/_site_default/
+docs/.jekyll-cache/
+docs/.bundle/
+docs/vendor/
+docs/Gemfile.lock

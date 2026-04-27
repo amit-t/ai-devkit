@@ -1,0 +1,21 @@
+# Per-owner link map for GitHub Pages.
+#
+# Resolved at build time using `site.github.owner_name` (auto-populated by the
+# jekyll-github-metadata plugin from whichever fork is publishing the site).
+# Add a new top-level key when an additional org/fork starts publishing Pages.
+#
+# Keys must match the GitHub owner slug exactly (case-sensitive).
+
+amit-t:
+  ai_devkit_repo:      https://github.com/amit-t/ai-devkit
+  ai_devkit_clone:     https://github.com/amit-t/ai-devkit.git
+  ai_workbench_repo:   https://github.com/amit-t/ai-workbench
+  ai_workbench_pages:  https://amit-t.github.io/ai-workbench/
+  ai_ralph_repo:       https://github.com/amit-t/ai-ralph
+
+Invenco-Cloud-Systems-ICS:
+  ai_devkit_repo:      https://github.com/Invenco-Cloud-Systems-ICS/ai-devkit
+  ai_devkit_clone:     https://github.com/Invenco-Cloud-Systems-ICS/ai-devkit.git
+  ai_workbench_repo:   https://github.com/Invenco-Cloud-Systems-ICS/ai-workbench
+  ai_workbench_pages:  https://Invenco-Cloud-Systems-ICS.github.io/ai-workbench/
+  ai_ralph_repo:       https://github.com/Invenco-Cloud-Systems-ICS/ai-ralph

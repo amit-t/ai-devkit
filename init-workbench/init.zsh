@@ -58,6 +58,9 @@ case "$AGENT" in
 esac
 
 # ── Build the prompt with runtime context ──────────────────────────────────
+DEVKIT_DIR="$(dirname "$SCRIPT_DIR")"
+TOOLS_PARENT="$(dirname "$DEVKIT_DIR")"
+
 FULL_PROMPT="$(cat "$PROMPT_FILE")
 
 ---
@@ -66,6 +69,8 @@ FULL_PROMPT="$(cat "$PROMPT_FILE")
 TARGET_CWD=${TARGET_CWD}
 INITIATOR_PWD=${TARGET_CWD}
 AGENT=${AGENT}
+DEVKIT_DIR=${DEVKIT_DIR}
+TOOLS_PARENT=${TOOLS_PARENT}
 RUN_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 "
 

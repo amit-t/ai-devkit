@@ -44,6 +44,9 @@ if [[ -z "$AGENT" ]]; then
   else echo "Neither devin nor claude CLI found." >&2; exit 1; fi
 fi
 
+DEVKIT_DIR="$(dirname "$SCRIPT_DIR")"
+TOOLS_PARENT="$(dirname "$DEVKIT_DIR")"
+
 FULL_PROMPT="$(cat "$PROMPT_FILE")
 
 ---
@@ -52,6 +55,8 @@ FULL_PROMPT="$(cat "$PROMPT_FILE")
 TARGET_CWD=$(pwd)
 WB_URL=${WB_URL}
 AGENT=${AGENT}
+DEVKIT_DIR=${DEVKIT_DIR}
+TOOLS_PARENT=${TOOLS_PARENT}
 RUN_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 "
 

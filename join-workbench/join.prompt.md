@@ -6,31 +6,167 @@ You are an automation agent with full permissions. Your job is to have a collabo
 
 ---
 
-## Step 0 — Pre-flight
+## Config (edit here if repo slugs change)
+
+```
+RALPH_REPO_SLUG="ai-ralph"
+RALPH_LOCAL_DIR="${TOOLS_PARENT}/ai-ralph"   # sibling of ai-devkit
+```
+
+After the comprehensive Step 0 below installs ralph globally, also verify it supports workspace mode:
+
+```bash
+ralph --help 2>&1 | grep -q -- '--workspace' || {
+  echo "Installed ralph does not support --workspace. Update ai-ralph and re-run install.sh:"
+  echo "  cd ${RALPH_LOCAL_DIR} && git pull && bash install.sh"
+  exit 1
+}
+
+---
+
+## Step 0 — Preflight
+
+Run before any clone. Fail fast.
+
+### 0a — Required CLIs
+
+```bash
+for c in git gh rsync python3; do
+  command -v "$c" >/dev/null 2>&1 || { echo "Missing CLI: $c"; exit 1; }
+done
+```
+
+### 0b — gh auth + account selection
 
 ```bash
 gh auth status
-command -v git gh rsync python3 >/dev/null 2>&1 || { echo "Missing required CLI"; exit 1; }
 ```
 
-Verify `ralph` is on PATH with workspace support. The initiator already enabled workspace mode at `repos/.ralph/`, but the joiner's machine still needs the `ralph` binary to drive `wb.ralph-plan` and `wb.ralph-dispatch`.
+If not authenticated, stop and instruct:
 
 ```bash
-if ! command -v ralph >/dev/null 2>&1; then
-  echo "ralph not found on PATH. Installing from ai-ralph..."
-  RALPH_SRC="${HOME}/Projects/Tools-Utilities/ai-ralph"
-  if [[ ! -d "${RALPH_SRC}" ]]; then
-    git clone https://github.com/Invenco-Cloud-Systems-ICS/ai-ralph.git "${RALPH_SRC}"
-  fi
-  bash "${RALPH_SRC}/install.sh"
-  command -v ralph >/dev/null 2>&1 || { echo "ralph install failed"; exit 1; }
-fi
-ralph --help 2>&1 | grep -q -- '--workspace' || {
-  echo "Installed ralph does not support --workspace. Update ai-ralph and re-run install.sh:"
-  echo "  cd ${HOME}/Projects/Tools-Utilities/ai-ralph && git pull && bash install.sh"
+gh auth login
+```
+
+Then re-run `join.wb <url>`.
+
+If authenticated:
+
+```bash
+GH_USER="$(gh api user -q .login)"
+```
+
+Show user:
+
+```
+GitHub CLI authenticated as: @${GH_USER}
+Workbench URL: ${WB_URL}
+Join this workbench as @${GH_USER}? [Y/n]
+```
+
+If **n**:
+
+1. List known accounts:
+   ```bash
+   gh auth status 2>&1 | grep -E "Logged in to github.com account"
+   ```
+2. Ask:
+   ```
+   Options:
+     [s] Switch to another already-logged-in account
+     [l] Login a new account
+     [q] Quit
+   ```
+3. For `s`: `gh auth switch` interactively. Re-resolve `GH_USER`.
+4. For `l`: `gh auth login`, then `gh auth switch` to the new one. Re-resolve `GH_USER`.
+5. For `q`: exit 0 with message "Aborted. Re-run join.wb when ready."
+
+Re-confirm:
+
+```
+Proceeding as @${GH_USER}. OK? [Y/n]
+```
+
+Loop until confirmed. `JOINER=${GH_USER}`.
+
+### 0c — Repo access check
+
+Before cloning, verify the joiner can reach `WB_URL`:
+
+```bash
+gh repo view "${WB_URL}" >/dev/null 2>&1 || {
+  echo "Cannot access ${WB_URL} as @${JOINER}."
+  echo "Either the repo is private and this account lacks access,"
+  echo "or the URL is wrong. Fix one of:"
+  echo "  - ask initiator to add @${JOINER} as collaborator"
+  echo "  - switch accounts (re-run join.wb and pick a different gh account)"
   exit 1
 }
 ```
+
+### 0d — Codeowner note
+
+Tell user:
+
+```
+Note: @${JOINER} will be appended to the CODEOWNERS * line on this workbench.
+```
+
+### 0e — Org selection (for ai-ralph source)
+
+Build the menu from the devkit org list:
+
+```bash
+orgs.wb show
+```
+
+Produces numbered list (configured orgs + devkit's auto-detected origin org + a final "Personal" slot). `1..N-1` map directly to the printed org slug; `N` prompts for a personal GitHub handle.
+
+Fallback if `orgs.wb` missing:
+
+```bash
+. "${DEVKIT_DIR}/lib/orgs.sh"
+devkit_orgs_show
+mapfile -t ORGS < <(devkit_orgs_list)
+```
+
+Store chosen value as `ORG`. More orgs can be added via `orgs.wb add <slug>`.
+
+### 0f — ai-ralph install (once per machine)
+
+Check global install:
+
+```bash
+if command -v ralph >/dev/null 2>&1 && command -v ralph-enable >/dev/null 2>&1; then
+  echo "ai-ralph already installed globally — skipping install."
+  RALPH_INSTALLED=1
+else
+  RALPH_INSTALLED=0
+fi
+```
+
+If `RALPH_INSTALLED=0`:
+
+1. Locate or clone:
+   ```bash
+   if [[ -d "${RALPH_LOCAL_DIR}/.git" ]]; then
+     echo "Found local ai-ralph at ${RALPH_LOCAL_DIR}"
+   else
+     git clone "https://github.com/${ORG}/${RALPH_REPO_SLUG}.git" "${RALPH_LOCAL_DIR}"
+   fi
+   ```
+2. Run base install:
+   ```bash
+   cd "${RALPH_LOCAL_DIR}"
+   ./install.sh
+   ```
+3. Optional Devin engine:
+   ```bash
+   command -v devin >/dev/null 2>&1 && ./devin/install_devin.sh || true
+   ```
+4. Verify `ralph-enable` resolves. If missing, warn to add `~/.local/bin` to PATH.
+
+Initiator already enabled the ralph workspace at `repos/.ralph/` (init.wb Step 3.4b). The joiner needs the global ralph install so `wb.ralph-plan` / `wb.ralph-dispatch` work on this machine. Step 4b below will re-verify with `scripts/ralph-enable-check.sh` and bootstrap the workspace if a joiner pulled an older workbench predating Step 3.4b.
 
 ---
 
@@ -135,8 +271,9 @@ This appends the entry idempotently and clones if needed. If `register-repo.sh` 
 
 ## Step 6 — Add joiner to CODEOWNERS
 
+`JOINER` already resolved in Step 0.
+
 ```bash
-JOINER="$(gh api user -q .login)"
 cd "${WB_DIR}"
 if ! grep -qE "^\\*\\s.*@${JOINER}\\b" .github/CODEOWNERS; then
   # BSD sed (macOS)

@@ -48,6 +48,10 @@ add_alias "alias update.wb='$SCRIPT_DIR/update-workbench/update.zsh'"  "alias up
 add_alias "alias update.wb.dev='$SCRIPT_DIR/update-workbench/update.zsh --agent devin'" "alias update.wb.dev="
 add_alias "alias update.wb.cly='$SCRIPT_DIR/update-workbench/update.zsh --agent claude'" "alias update.wb.cly="
 
+# ── orgs.wb ─────────────────────────────────────────────────────────────────
+install_cmd "orgs.wb"     "$SCRIPT_DIR/orgs-workbench/orgs.zsh"
+add_alias "alias orgs.wb='$SCRIPT_DIR/orgs-workbench/orgs.zsh'"        "alias orgs.wb="
+
 # ── PATH check ──────────────────────────────────────────────────────────────
 if ! echo "$PATH" | tr ':' '\n' | grep -qx "$BIN_DIR"; then
   warn "$BIN_DIR not in PATH"

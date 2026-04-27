@@ -1,0 +1,92 @@
+{%- include links.html -%}
+<!DOCTYPE html>
+<html lang="{{ site.lang | default: 'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if page.title %}{{ page.title }} — {{ site.title }}{% else %}{{ site.title }}{% endif %}</title>
+  <meta name="description" content="{{ page.description | default: site.description }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ '/assets/css/site.css' | relative_url }}">
+  {% seo %}
+</head>
+<body>
+
+  <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Cycle theme: light / dark / cyberpunk">🌙</button>
+
+  <nav class="container site-nav" aria-label="Primary">
+    <a class="site-nav-brand" href="{{ '/' | relative_url }}">AI Devkit</a>
+    <a href="{{ '/getting-started.html' | relative_url }}">Getting Started</a>
+    <a href="{{ '/commands.html' | relative_url }}">Commands</a>
+    <a href="{{ '/orgs.html' | relative_url }}">Orgs</a>
+    <a href="{{ links.ai_workbench_pages }}" target="_blank" rel="noreferrer">ai-workbench</a>
+    <a href="{{ links.ai_ralph_repo }}" target="_blank" rel="noreferrer">ai-ralph</a>
+    <a href="{{ links.ai_devkit_repo }}" target="_blank" rel="noreferrer">GitHub</a>
+  </nav>
+
+  {% assign is_home = false %}
+  {% if page.url == '/' or page.url == '/index.html' %}{% assign is_home = true %}{% endif %}
+
+  {% unless is_home %}
+    <nav class="container breadcrumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="{{ '/' | relative_url }}">Home</a></li>
+        {% assign segments = page.url | remove_first: '/' | remove: '.html' | split: '/' %}
+        {% assign last = segments | last %}
+        {% for seg in segments %}
+          {% capture crumb %}{% if seg == 'getting-started' %}Getting Started{% elsif seg == 'commands' %}Commands{% elsif seg == 'orgs' %}Orgs{% else %}{{ seg }}{% endif %}{% endcapture %}
+          {% if seg == last %}
+            <li aria-current="page">{{ crumb | strip }}</li>
+          {% else %}
+            <li>{{ crumb | strip }}</li>
+          {% endif %}
+        {% endfor %}
+      </ol>
+    </nav>
+  {% endunless %}
+
+  {% if is_home %}
+    <header class="container hero">
+      <div>
+        <span class="hero-eyebrow">Global CLI</span>
+        <h1>Bootstrap AI Workbenches With One Command.</h1>
+        <p class="hero-desc">
+          <code>init.wb</code> stamps a new private workbench from the <code>ai-workbench</code> template. <code>join.wb</code> onboards collaborators as CODEOWNERS. <code>update.wb</code> pulls template upgrades. <code>orgs.wb</code> manages your GitHub org list. Preflight checks for <code>gh</code> auth + <code>ai-ralph</code> install come free.
+        </p>
+        <div class="hero-actions">
+          <a class="neo-btn neo-btn-primary" href="{{ '/getting-started.html' | relative_url }}">Install</a>
+          <a class="neo-btn" href="{{ '/commands.html' | relative_url }}">Commands</a>
+          <a class="neo-btn" href="{{ links.ai_devkit_repo }}" target="_blank" rel="noreferrer">GitHub</a>
+        </div>
+      </div>
+    </header>
+
+    <hr class="divider container">
+  {% else %}
+    <header class="container doc-hero">
+      <span class="doc-hero-eyebrow">{{ page.eyebrow | default: 'Docs' }}</span>
+      <h1>{{ page.title | default: 'AI Devkit' }}</h1>
+      {% if page.subtitle %}<p class="doc-hero-desc">{{ page.subtitle }}</p>{% endif %}
+    </header>
+  {% endif %}
+
+  <main class="container section">
+    <article class="markdown-body">
+      {{ content }}
+    </article>
+  </main>
+
+  <footer class="container footer">
+    <p>
+      <code>ai-devkit</code> — global CLI for AI workbenches. Pair with the
+      <a href="{{ links.ai_workbench_repo }}">ai-workbench</a> template and
+      <a href="{{ links.ai_ralph_repo }}">ai-ralph</a> autonomous loop.
+      Source on <a href="{{ links.ai_devkit_repo }}">GitHub</a>.
+    </p>
+  </footer>
+
+  <script src="{{ '/assets/js/site.js' | relative_url }}"></script>
+</body>
+</html>

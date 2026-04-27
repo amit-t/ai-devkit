@@ -41,6 +41,52 @@ USAGE
   esac
 done
 
+# ── Steering drift nag ──────────────────────────────────────────────────────
+# Walk steering.local/**/*.md, classify each override, and print a one-line
+# nag pointing at the template repo so users promote proven overrides.
+# Silent when steering.local/ is missing or contains no .md files.
+_print_steering_drift_nag() {
+  local wb_dir="$1"
+  local upstream="$2"
+  local steering_dir="${wb_dir}/steering.local"
+
+  [[ -d "$steering_dir" ]] || return 0
+
+  local count_add=0 count_super=0 count_remove=0
+  local f base
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    base="${f:t}"
+    if [[ "$base" == *.removed.md ]]; then
+      (( count_remove++ ))
+      continue
+    fi
+    # Extract YAML frontmatter (between first two --- lines) and look for
+    # a supersedes: key. Presence of the key, inline or block form, counts
+    # as a supersede override.
+    if awk '/^---[[:space:]]*$/{c++; next} c==1' "$f" 2>/dev/null \
+         | grep -qE '^supersedes:'; then
+      (( count_super++ ))
+    else
+      (( count_add++ ))
+    fi
+  done < <(find "$steering_dir" -type f -name '*.md' 2>/dev/null)
+
+  local total=$(( count_add + count_super + count_remove ))
+  (( total == 0 )) && return 0
+
+  # Derive owner/repo path from upstream URL. Accepts:
+  #   https://github.com/<org>/<repo>(.git)?
+  #   git@github.com:<org>/<repo>(.git)?
+  local template_path="${upstream%.git}"
+  template_path="${template_path#https://github.com/}"
+  template_path="${template_path#git@github.com:}"
+  local template_url="https://github.com/${template_path}"
+
+  echo ""
+  echo "${total} local steering overrides in this workbench (${count_add} add, ${count_super} supersede, ${count_remove} remove). Review with \`wb.steering-refresh\` and \`pmo-status\`. Promote proven overrides upstream via PR to ${template_url}."
+}
+
 # ── Locate workbench root ───────────────────────────────────────────────────
 _find_wb_root() {
   local dir="$PWD"
@@ -130,6 +176,7 @@ done <<< "$TEMPLATE_PATHS"
 git add -A
 if git diff --cached --quiet; then
   echo "Already up to date."
+  _print_steering_drift_nag "$WB_DIR" "$UPSTREAM_URL"
   exit 0
 fi
 
@@ -175,3 +222,5 @@ if [[ -d "${WB_DIR}/repos" ]]; then
     fi
   fi
 fi
+
+_print_steering_drift_nag "$WB_DIR" "$UPSTREAM_URL"

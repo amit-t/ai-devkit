@@ -6,6 +6,163 @@ You are an automation agent with full permissions. Your job is to bootstrap a ne
 
 ---
 
+## Config (edit here if repo slugs change)
+
+```
+RALPH_REPO_SLUG="ai-ralph"            # repo name under selected org
+WORKBENCH_TEMPLATE_SLUG="ai-workbench"
+RALPH_LOCAL_DIR="${TOOLS_PARENT}/ai-ralph"   # sibling of ai-devkit
+```
+
+---
+
+## Step 0 — Preflight
+
+Run before interview. Fail fast with clear guidance.
+
+### 0a — Required CLIs
+
+```bash
+for c in git gh rsync python3; do
+  command -v "$c" >/dev/null 2>&1 || { echo "Missing CLI: $c"; exit 1; }
+done
+```
+
+### 0b — gh auth + account selection
+
+```bash
+gh auth status
+```
+
+If not authenticated, stop and instruct:
+
+```bash
+gh auth login
+```
+
+Then re-run `init.wb`.
+
+If authenticated, resolve active account:
+
+```bash
+GH_USER="$(gh api user -q .login)"
+```
+
+Show user:
+
+```
+GitHub CLI authenticated as: @${GH_USER}
+Use this account for the new workbench repo? [Y/n]
+```
+
+If user answers **n**:
+
+1. List known accounts:
+   ```bash
+   gh auth status 2>&1 | grep -E "Logged in to github.com account"
+   ```
+2. Ask:
+   ```
+   Options:
+     [s] Switch to another already-logged-in account
+     [l] Login a new account
+     [q] Quit
+   ```
+3. For `s`: run `gh auth switch`. Let user pick interactively. Re-resolve `GH_USER`.
+4. For `l`: run `gh auth login`. After success, `gh auth switch` to the new one. Re-resolve `GH_USER`.
+5. For `q`: exit 0 with message "Aborted. Re-run init.wb when ready."
+
+Re-confirm:
+
+```
+Proceeding as @${GH_USER}. OK? [Y/n]
+```
+
+Loop 0b until user confirms. `CREATED_BY=${GH_USER}`.
+
+### 0c — Codeowner note
+
+Tell user:
+
+```
+Note: @${GH_USER} will be added as a CODEOWNER on the new repo.
+Any joiner running join.wb will be appended to the same CODEOWNERS line.
+```
+
+### 0d — Org selection (for ai-ralph source)
+
+Ask which GitHub org hosts `${RALPH_REPO_SLUG}` and the `${WORKBENCH_TEMPLATE_SLUG}` template.
+
+Build the menu dynamically from the devkit org list (configured + auto-detected from devkit's origin). Use the `orgs.wb` utility:
+
+```bash
+orgs.wb show
+```
+
+That prints a numbered menu like:
+
+```
+  [1] Invenco-Cloud-Systems-ICS
+  [2] <auto-detected-org-from-devkit-origin>
+  [N] Personal (enter your GitHub handle)
+```
+
+The final "Personal" slot is always last. Selections `1..N-1` map directly to the printed org slug; selection `N` prompts "Enter personal GitHub handle (e.g. amit-t):" and sets `ORG="<handle>"`.
+
+If `orgs.wb` is not on PATH (fresh machine, devkit installed but shell not reloaded), fall back to sourcing the library directly:
+
+```bash
+. "${DEVKIT_DIR}/lib/orgs.sh"
+devkit_orgs_show
+# read configured list for mapping:
+mapfile -t ORGS < <(devkit_orgs_list)
+```
+
+Store chosen value as `ORG`. Use this for both `ai-ralph` source and the workbench template (so Step 1e can default to this ORG — skip the 1e prompt if user already picked here; confirm instead).
+
+To add more orgs later, the user runs: `orgs.wb add <slug>`.
+
+### 0e — ai-ralph install (once per machine)
+
+Check global install:
+
+```bash
+if command -v ralph >/dev/null 2>&1 && command -v ralph-enable >/dev/null 2>&1; then
+  echo "ai-ralph already installed globally — skipping install."
+  RALPH_INSTALLED=1
+else
+  RALPH_INSTALLED=0
+fi
+```
+
+If `RALPH_INSTALLED=0`:
+
+1. Locate or clone:
+   ```bash
+   if [[ -d "${RALPH_LOCAL_DIR}/.git" ]]; then
+     echo "Found local ai-ralph at ${RALPH_LOCAL_DIR}"
+   else
+     git clone "https://github.com/${ORG}/${RALPH_REPO_SLUG}.git" "${RALPH_LOCAL_DIR}"
+   fi
+   ```
+2. Run base install (Claude engine):
+   ```bash
+   cd "${RALPH_LOCAL_DIR}"
+   ./install.sh
+   ```
+3. Optionally install Devin engine if `devin` CLI is on PATH:
+   ```bash
+   command -v devin >/dev/null 2>&1 && ./devin/install_devin.sh || true
+   ```
+4. Verify `ralph-enable` now resolves. If `~/.local/bin` is not on PATH, warn user to add:
+   ```bash
+   export PATH="$HOME/.local/bin:$PATH"
+   ```
+
+`ralph` install is **global + one-time**. Do NOT run `./install.sh` again if already installed. `ralph-enable` in Step 3.x scopes ralph to the workbench only.
+
+---
+
 ## Step 1 — Interview
 
 Introduce yourself in one line: "I'll set up a new workbench from the ai-workbench template. A few quick questions."
@@ -41,7 +198,7 @@ Only enable the user's chosen set.
 
 ### 1e — Target org
 
-Default: the user's GitHub login, resolved at runtime via `gh api user -q .login`. Let the user override with any org slug they can push to. Store as `ORG`.
+`ORG` already chosen in Step 0d. Confirm: "Create the workbench under `${ORG}`? [Y/n]". If **n**, re-run Step 0d.
 
 ### 1f — Confirm
 
@@ -70,12 +227,9 @@ If `REPO_NAME` already exists under the org, stop and ask for a new label.
 
 Run these steps in order. Announce each step as it runs.
 
-### 3.1 — Pre-flight
+### 3.1 — Pre-flight (already done in Step 0)
 
-```bash
-gh auth status
-command -v git gh rsync python3 >/dev/null 2>&1 || { echo "Missing required CLI"; exit 1; }
-```
+Skip — Step 0 covered CLI presence, gh auth, and account selection. `CREATED_BY` is set.
 
 Verify `ralph` is on PATH and supports workspace mode. If missing, install from the local ai-ralph clone (preferred) or from the upstream repo:
 
@@ -115,6 +269,24 @@ gh repo create ${ORG}/${REPO_NAME} \
 If the created directory is nested incorrectly, move it to `${TARGET_CWD}` or to `$(dirname ${TARGET_CWD})/${REPO_NAME}` so the user's intended path holds the workbench. If `TARGET_CWD` already equals `${REPO_NAME}`, use it in place.
 
 Set `WB_DIR` to the final path.
+
+### 3.2b — Tag repo with `ai-workbench` topic
+
+Tag the new repo so org-wide tooling (for example, the weekly steering-overlay aggregator in the template repo) can discover every stamped workbench across the org by topic.
+
+```bash
+gh repo edit "${ORG}/${REPO_NAME}" --add-topic ai-workbench
+```
+
+`--add-topic` is idempotent. Re-running on a repo that already has the topic is a no-op and does not fail. Safe to retry after a failed stamp.
+
+Verify:
+
+```bash
+gh repo view "${ORG}/${REPO_NAME}" --json repositoryTopics
+```
+
+The output must include `ai-workbench` in `repositoryTopics`. The topic is the stable contract for discovery, so do not skip this step even if the template repo moves orgs later.
 
 ### 3.3 — Add upstream remote to the template
 
@@ -283,6 +455,26 @@ for dir in .claude/skills .agents/skills .devin/skills; do
   done
 done
 ```
+
+### 3.10b — Enable ai-ralph in the workbench only
+
+<!-- TODO(ai-ralph-workspace-mode): Rewrite this step once ai-ralph's "workspace mode"
+     PR merges. Trigger phrase: "ralph workspace mode is ready". When fired, re-read
+     ai-ralph README/docs (under ${RALPH_LOCAL_DIR}) for the new enable flow and
+     update this step to match. -->
+
+Scope: `${WB_DIR}` ONLY. Do NOT run this inside any sibling repo under `repos/*`.
+
+```bash
+cd "${WB_DIR}"
+if [[ ! -d .ralph ]]; then
+  ralph-enable --non-interactive 2>/dev/null || ralph-enable-ci
+else
+  echo ".ralph/ already present — skipping ralph-enable."
+fi
+```
+
+If `ralph-enable` prompts interactively and the agent cannot answer, fall back to `ralph-enable-ci` (non-interactive, sensible defaults). The `.ralph/` config, `.ralphrc`, and `.gitignore` entries will be picked up by the Step 3.12 commit.
 
 ### 3.11 — Source aliases (note only)
 

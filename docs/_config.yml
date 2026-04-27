@@ -1,0 +1,25 @@
+title: AI Devkit
+description: Global CLI for bootstrapping per-bundle AI workbenches — init.wb, join.wb, update.wb, orgs.wb. Pairs with ai-workbench template and ai-ralph autonomous loop.
+
+# Local-build fallback for the github-metadata plugin. GitHub Pages overrides
+# this at deploy time via the PAGES_REPO_NWO env var, so the inv fork still
+# resolves to its own owner when published. Only used by `jekyll serve` /
+# Docker / CI runs that lack PAGES_REPO_NWO.
+repository: amit-t/ai-devkit
+
+# Belt-and-braces fallback for _includes/links.html if site.github.owner_name
+# cannot be resolved at all (e.g. plugin fails / unknown owner). Mirrors the
+# `repository` owner above so local previews match the canonical fork.
+fallback_owner: amit-t
+
+plugins:
+  - jekyll-seo-tag
+  - jekyll-github-metadata
+
+show_downloads: false
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
