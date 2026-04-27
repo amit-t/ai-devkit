@@ -190,4 +190,37 @@ echo ""
 echo "── Template sync complete ──"
 printf "  upstream sha: %s\n  paths updated: %d\n" "$UPSTREAM_SHA" "${#UPDATED[@]}"
 
+# ── Post-sync: ralph workspace migration (idempotent) ───────────────────────
+# Older stamped wbs were created before init.wb Step 3.4b enabled the ralph
+# workspace at ${WB_DIR}/repos/. After update.wb pulls in the template, run
+# the bootstrap once so wb.ralph-* commands work without manual setup.
+
+if [[ -d "${WB_DIR}/repos" ]]; then
+  if [[ ! -d "${WB_DIR}/repos/.ralph" ]] || ! grep -q '^WORKSPACE_MODE=true' "${WB_DIR}/repos/.ralphrc" 2>/dev/null; then
+    if (( $+commands[ralph] )); then
+      if ralph --help 2>&1 | grep -q -- '--workspace'; then
+        echo ""
+        echo "── Ralph workspace migration ──"
+        echo "  ${WB_DIR}/repos/.ralph/ is missing or .ralphrc lacks WORKSPACE_MODE=true."
+        echo "  Running: (cd ${WB_DIR}/repos && ralph enable --workspace --non-interactive --skip-tasks)"
+        (cd "${WB_DIR}/repos" && ralph enable --workspace --non-interactive --skip-tasks)
+        if grep -q '^WORKSPACE_MODE=true' "${WB_DIR}/repos/.ralphrc" 2>/dev/null; then
+          echo "  ralph workspace enabled at ${WB_DIR}/repos/.ralph/"
+          if [[ -x "${WB_DIR}/scripts/ralph-enable-check.sh" ]]; then
+            "${WB_DIR}/scripts/ralph-enable-check.sh" || echo "  warning: ralph-enable-check.sh reported issues"
+          fi
+        else
+          echo "  warning: ralph enable --workspace did not set WORKSPACE_MODE=true; manual fix needed" >&2
+        fi
+      else
+        echo "  skipped ralph workspace migration: installed ralph lacks --workspace support"
+        echo "  update ai-ralph and re-run update.wb to migrate"
+      fi
+    else
+      echo "  skipped ralph workspace migration: ralph binary not on PATH"
+      echo "  install ralph (init.wb / join.wb / bash ~/Projects/Tools-Utilities/ai-ralph/install.sh) and re-run update.wb"
+    fi
+  fi
+fi
+
 _print_steering_drift_nag "$WB_DIR" "$UPSTREAM_URL"

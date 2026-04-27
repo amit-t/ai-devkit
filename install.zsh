@@ -58,4 +58,17 @@ if ! echo "$PATH" | tr ':' '\n' | grep -qx "$BIN_DIR"; then
   printf "   Add to ~/.zshrc: export PATH=\"\$HOME/.local/bin:\$PATH\"\n"
 fi
 
+# ── Ralph probe ─────────────────────────────────────────────────────────────
+# init.wb / join.wb install ralph on demand. We just warn here so users see it
+# now rather than later. Do NOT auto-install: ralph install touches ~/.ralph/
+# and should be a deliberate step the user sees during init.wb.
+if (( ! $+commands[ralph] )); then
+  warn "ralph is not installed yet"
+  printf "   init.wb / join.wb will install it from ai-ralph at first run.\n"
+elif ! ralph --help 2>&1 | grep -q -- '--workspace'; then
+  warn "ralph is installed but does not support --workspace mode"
+  printf "   Update ai-ralph and re-run its install.sh:\n"
+  printf "     cd \$HOME/Projects/Tools-Utilities/ai-ralph && git pull && bash install.sh\n"
+fi
+
 ok "done — run: source ~/.zshrc"
