@@ -77,6 +77,31 @@ gh auth status
 command -v git gh rsync python3 >/dev/null 2>&1 || { echo "Missing required CLI"; exit 1; }
 ```
 
+Verify `ralph` is on PATH and supports workspace mode. If missing, install from the local ai-ralph clone (preferred) or from the upstream repo:
+
+```bash
+if ! command -v ralph >/dev/null 2>&1; then
+  echo "ralph not found on PATH. Installing from ai-ralph..."
+  RALPH_SRC="${HOME}/Projects/Tools-Utilities/ai-ralph"
+  if [[ ! -d "${RALPH_SRC}" ]]; then
+    git clone https://github.com/Invenco-Cloud-Systems-ICS/ai-ralph.git "${RALPH_SRC}"
+  fi
+  bash "${RALPH_SRC}/install.sh"
+  command -v ralph >/dev/null 2>&1 || { echo "ralph install failed"; exit 1; }
+fi
+ralph --help 2>&1 | grep -q -- '--workspace' || {
+  echo "Installed ralph does not support --workspace. Update ai-ralph and re-run install.sh:"
+  echo "  cd ${HOME}/Projects/Tools-Utilities/ai-ralph && git pull && bash install.sh"
+  exit 1
+}
+```
+
+Verify Claude CLI is current enough for ralph (>= 2.0.76):
+
+```bash
+claude --version 2>/dev/null || { echo "Claude CLI not on PATH"; exit 1; }
+```
+
 ### 3.2 — Create workbench repo from template
 
 ```bash
@@ -100,11 +125,63 @@ git remote add upstream "${TEMPLATE_UPSTREAM_URL}.git" 2>/dev/null || true
 
 ### 3.4 — Clone registered code repos into repos/
 
-For each (name, url, role, stack) gathered in Step 1b:
+Always create `repos/` first, even if no repos are registered yet (joiners may add them later):
 
 ```bash
 mkdir -p "${WB_DIR}/repos"
+```
+
+Then for each (name, url, role, stack) gathered in Step 1b:
+
+```bash
 git clone "${url}" "${WB_DIR}/repos/${name}"
+```
+
+### 3.4a — Purge template-dev-only artifacts
+
+The `ai-workbench` template repo carries some files for its own template-development loop that must NOT travel into stamped wbs. The list lives in `.workbench-manifest.json` under `template_dev_only`. Read it and remove each entry:
+
+```bash
+cd "${WB_DIR}"
+python3 - <<'PYEOF'
+import json, pathlib
+manifest = json.loads(pathlib.Path(".workbench-manifest.json").read_text())
+for rel in manifest.get("template_dev_only", []):
+    p = pathlib.Path(rel)
+    if p.exists():
+        if p.is_dir():
+            import shutil; shutil.rmtree(p)
+        else:
+            p.unlink()
+        print(f"purged template-dev artifact: {rel}")
+PYEOF
+```
+
+Do not commit yet; later steps add more changes that go in the same initial commit.
+
+### 3.4b — Enable ralph workspace mode at repos/
+
+Ralph runs the loop, parallelism, and PR creation. Workbench wraps it. The `ai-devkit` is the only place that bootstraps the workspace; downstream `wb.ralph-*` aliases assume `${WB_DIR}/repos/.ralph/` is already present.
+
+```bash
+cd "${WB_DIR}/repos"
+ralph enable --workspace --non-interactive --skip-tasks
+cd "${WB_DIR}"
+```
+
+Verify the resulting `.ralphrc` declares workspace mode (`wb.ralph-enable-check` will block `wb.ralph-plan` and `wb.ralph-dispatch` otherwise):
+
+```bash
+grep -q '^WORKSPACE_MODE=true' "${WB_DIR}/repos/.ralphrc" || {
+  echo "ralph enable --workspace did not set WORKSPACE_MODE=true; abort"
+  exit 1
+}
+```
+
+Sanity check the preflight sees a healthy workspace:
+
+```bash
+"${WB_DIR}/scripts/ralph-enable-check.sh"
 ```
 
 ### 3.5 — Render project.conf from template

@@ -6,6 +6,34 @@ You are an automation agent with full permissions. Your job is to have a collabo
 
 ---
 
+## Step 0 — Pre-flight
+
+```bash
+gh auth status
+command -v git gh rsync python3 >/dev/null 2>&1 || { echo "Missing required CLI"; exit 1; }
+```
+
+Verify `ralph` is on PATH with workspace support. The initiator already enabled workspace mode at `repos/.ralph/`, but the joiner's machine still needs the `ralph` binary to drive `wb.ralph-plan` and `wb.ralph-dispatch`.
+
+```bash
+if ! command -v ralph >/dev/null 2>&1; then
+  echo "ralph not found on PATH. Installing from ai-ralph..."
+  RALPH_SRC="${HOME}/Projects/Tools-Utilities/ai-ralph"
+  if [[ ! -d "${RALPH_SRC}" ]]; then
+    git clone https://github.com/Invenco-Cloud-Systems-ICS/ai-ralph.git "${RALPH_SRC}"
+  fi
+  bash "${RALPH_SRC}/install.sh"
+  command -v ralph >/dev/null 2>&1 || { echo "ralph install failed"; exit 1; }
+fi
+ralph --help 2>&1 | grep -q -- '--workspace' || {
+  echo "Installed ralph does not support --workspace. Update ai-ralph and re-run install.sh:"
+  echo "  cd ${HOME}/Projects/Tools-Utilities/ai-ralph && git pull && bash install.sh"
+  exit 1
+}
+```
+
+---
+
 ## Step 1 — Clone the workbench
 
 ```bash
@@ -69,6 +97,25 @@ For each new repo:
 
 ```bash
 git clone "${url}" "${WB_DIR}/repos/${name}"
+```
+
+---
+
+## Step 4b — Verify ralph workspace is enabled
+
+The initiator should have run `ralph enable --workspace` during `init.wb`. If a joiner pulled an older workbench predating that step, bootstrap workspace mode now (idempotent):
+
+```bash
+mkdir -p "${WB_DIR}/repos"
+"${WB_DIR}/scripts/ralph-enable-check.sh" >/dev/null 2>&1 || {
+  echo "Ralph workspace not enabled yet. Bootstrapping at ${WB_DIR}/repos/..."
+  (cd "${WB_DIR}/repos" && ralph enable --workspace --non-interactive --skip-tasks)
+  grep -q '^WORKSPACE_MODE=true' "${WB_DIR}/repos/.ralphrc" || {
+    echo "ralph enable --workspace did not set WORKSPACE_MODE=true; abort"
+    exit 1
+  }
+  "${WB_DIR}/scripts/ralph-enable-check.sh"
+}
 ```
 
 ---
