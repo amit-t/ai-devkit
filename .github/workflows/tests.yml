@@ -22,6 +22,12 @@ on:
       - 'install.zsh'
       - '.github/workflows/tests.yml'
 
+# Least-privilege GITHUB_TOKEN. Resolves CodeQL
+# `actions/missing-workflow-permissions` finding — the workflow only checks
+# out and runs zsh, so read access to repo contents is enough.
+permissions:
+  contents: read
+
 jobs:
   zsh-tests:
     runs-on: ubuntu-latest
