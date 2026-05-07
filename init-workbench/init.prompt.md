@@ -465,16 +465,20 @@ done
 
 Scope: `${WB_DIR}` ONLY. Do NOT run this inside any sibling repo under `repos/*`.
 
+`init.wb` is the first run for a brand-new workbench. If the template clone shipped a `.ralph/` directory, it is the template's own `.ralph/` (e.g. `AGENT.md` describing template-dev tests) and is stale for this workbench. Wipe it and let `ralph-enable` regenerate cleanly.
+
 ```bash
 cd "${WB_DIR}"
-if [[ ! -d .ralph ]]; then
-  ralph-enable --non-interactive 2>/dev/null || ralph-enable-ci
-else
-  echo ".ralph/ already present — skipping ralph-enable."
+if [[ -d .ralph ]]; then
+  echo ".ralph/ from template clone is stale for this workbench — rebuilding."
+  rm -rf .ralph
 fi
+ralph-enable --non-interactive 2>/dev/null || ralph-enable-ci
 ```
 
 If `ralph-enable` prompts interactively and the agent cannot answer, fall back to `ralph-enable-ci` (non-interactive, sensible defaults). The `.ralph/` config, `.ralphrc`, and `.gitignore` entries will be picked up by the Step 3.12 commit.
+
+Note: `join.wb` deliberately does **not** rebuild `.ralph/`. By the time a joiner clones, the initiator has already run this step and committed the workbench-specific `.ralph/`; preserving it keeps both collaborators on the same agent config.
 
 ### 3.11 — Source aliases (note only)
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 # orgs.zsh — CLI for managing the devkit org list.
 #
 # Usage:
@@ -13,8 +13,13 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-DEVKIT_ROOT="$(dirname "$SCRIPT_DIR")"
+# Resolve real script path even when invoked via PATH symlink
+# (~/.local/bin/orgs.wb → repo/orgs-workbench/orgs.zsh). `${0:A}` follows
+# symlinks and yields the absolute path so DEVKIT_ROOT lands inside the
+# repo, not in ~/.local where install.zsh's symlink lives.
+SCRIPT_PATH="${0:A}"
+SCRIPT_DIR="${SCRIPT_PATH:h}"
+DEVKIT_ROOT="${SCRIPT_DIR:h}"
 # shellcheck source=../lib/orgs.sh
 . "$DEVKIT_ROOT/lib/orgs.sh"
 
