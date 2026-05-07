@@ -16,6 +16,12 @@ on:
       - 'scripts/check-docs-links.sh'
       - '.github/workflows/docs-links.yml'
 
+# Least-privilege GITHUB_TOKEN. Resolves the standing CodeQL
+# `actions/missing-workflow-permissions` findings — both jobs only check out
+# the repo and run scripts/Jekyll, so read access is sufficient.
+permissions:
+  contents: read
+
 jobs:
   audit:
     runs-on: ubuntu-latest
