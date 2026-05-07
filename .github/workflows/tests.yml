@@ -1,0 +1,44 @@
+name: tests
+
+on:
+  push:
+    paths:
+      - 'orgs-workbench/**'
+      - 'init-workbench/**'
+      - 'join-workbench/**'
+      - 'update-workbench/**'
+      - 'lib/**'
+      - 'tests/**'
+      - 'install.zsh'
+      - '.github/workflows/tests.yml'
+  pull_request:
+    paths:
+      - 'orgs-workbench/**'
+      - 'init-workbench/**'
+      - 'join-workbench/**'
+      - 'update-workbench/**'
+      - 'lib/**'
+      - 'tests/**'
+      - 'install.zsh'
+      - '.github/workflows/tests.yml'
+
+jobs:
+  zsh-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install zsh
+        run: |
+          set -eu
+          if ! command -v zsh >/dev/null; then
+            sudo apt-get update -y
+            sudo apt-get install -y zsh
+          fi
+      - name: Parse-check shell sources
+        run: |
+          set -eu
+          for f in $(git ls-files '*.zsh' 'orgs-workbench/orgs.zsh'); do
+            zsh -n "$f"
+          done
+      - name: Run tests/run-all.zsh
+        run: zsh tests/run-all.zsh

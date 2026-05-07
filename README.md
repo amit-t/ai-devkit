@@ -87,10 +87,23 @@ ai-devkit/
 ├── install.zsh              # one-shot installer
 ├── init-workbench/          # init.zsh  + init.prompt.md
 ├── join-workbench/          # join.zsh  + join.prompt.md
-└── update-workbench/        # update.zsh + update.prompt.md (interactive only)
+├── update-workbench/        # update.zsh + update.prompt.md (interactive only)
+├── orgs-workbench/          # orgs.wb — manage the devkit org list
+├── lib/                     # shared shell libraries (orgs.sh, …)
+└── tests/                   # zsh regression tests (run via tests/run-all.zsh)
 ```
 
 Each subdirectory pairs a short zsh launcher with the prompt that drives the agent. Update a prompt, and every user of that command picks up the change on their next run.
+
+---
+
+## Tests
+
+```zsh
+zsh tests/run-all.zsh
+```
+
+Covers the regressions Devin has flagged in past runs (e.g. `orgs.wb` PATH/symlink resolution, `init.wb` Step 3.10b `.ralph/` rebuild). Add a new `tests/test-*.zsh` whenever a fix lands.
 
 ---
 
