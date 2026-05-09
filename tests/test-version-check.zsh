@@ -100,4 +100,20 @@ test_local_version_corrupt() {
 test_local_version_from_clone
 test_local_version_missing
 test_local_version_corrupt
+
+test_fetch_upstream_via_gh_shim() {
+  local respdir
+  respdir="$(mktemp -d)"
+  trap "rm -rf '$respdir'" EXIT
+  GH_SHIM_RESPONSES_DIR="$respdir"
+  source "${REPO_ROOT}/tests/helpers/gh-shim.sh"
+  local key
+  key="$(_compute_key "api" "repos/amit-t/ai-devkit/contents/version.json?ref=main" "-H" "Accept: application/vnd.github.raw+json")"
+  printf '{"version":"1.4.0","check_ttl_hours":12,"channel":"stable","requires":{},"changelog_url":""}\n' > "$respdir/$key.json"
+  local out
+  out="$(_wb_fetch_upstream amit-t ai-devkit)"
+  assert_eq "$(echo "$out" | jq -r .version)" "1.4.0" "fetch_upstream returns upstream JSON"
+}
+
+test_fetch_upstream_via_gh_shim
 print -r -- "PASS: test-version-check.zsh (semver compare)"
