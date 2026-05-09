@@ -25,6 +25,13 @@ ok "installed lib: $SHARE_DIR/version-check.sh"
 ZPROFILE="${HOME}/.zprofile"
 DEVKIT_LINE="export DEVKIT_CLONE=\"$SCRIPT_DIR\""
 if ! grep -qF "$DEVKIT_LINE" "$ZPROFILE" 2>/dev/null; then
+  # Strip any prior DEVKIT_CLONE assignment so relocating the clone
+  # does not stack stale lines in ~/.zprofile.
+  if [[ -f "$ZPROFILE" ]] && grep -q '^export DEVKIT_CLONE=' "$ZPROFILE"; then
+    tmp_zp="$(mktemp)"
+    grep -v '^export DEVKIT_CLONE=' "$ZPROFILE" > "$tmp_zp"
+    mv "$tmp_zp" "$ZPROFILE"
+  fi
   if ! grep -q "EXTERNAL PROJECT ALIASES" "$ZPROFILE" 2>/dev/null; then
     printf "\n# === EXTERNAL PROJECT ALIASES ===\n" >> "$ZPROFILE"
   fi
