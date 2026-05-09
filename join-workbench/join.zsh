@@ -10,6 +10,14 @@
 
 set -euo pipefail
 
+# ── Version-check preamble ──────────────────────────────────────────────────
+LIBVC="${HOME}/.local/share/wb-versioncheck/version-check.sh"
+if [[ -f "$LIBVC" ]]; then
+  # shellcheck disable=SC1090
+  _VERCHECK_LIB_DIR_OVERRIDE="${LIBVC:h}" . "$LIBVC"
+  _wb_versioncheck devkit || true
+fi
+
 SCRIPT_DIR="${0:A:h}"
 PROMPT_FILE="${SCRIPT_DIR}/join.prompt.md"
 
