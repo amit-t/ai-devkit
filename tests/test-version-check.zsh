@@ -226,4 +226,20 @@ test_bootstrap_clear_after_upgrade() {
 
 test_bootstrap_nag_fires_once
 test_bootstrap_clear_after_upgrade
+
+test_record_prior_writes_file() {
+  local cachedir clonedir
+  cachedir="$(mktemp -d)"
+  clonedir="$(mktemp -d)"
+  trap "rm -rf '$cachedir' '$clonedir'" EXIT
+  WB_UPDATES_CACHE_DIR="$cachedir"
+  DEVKIT_CLONE="$clonedir"
+  printf '{"version":"1.2.3"}\n' > "$clonedir/version.json"
+  ( cd "$clonedir" && git init -q -b main && git -c user.email=t@t -c user.name=t add version.json && git -c user.email=t@t -c user.name=t commit -q -m init )
+  _wb_record_prior devkit
+  [[ -f "$cachedir/devkit-prior.json" ]] || { print -r -- "FAIL: prior file not created"; exit 1; }
+  assert_eq "$(jq -r .prior_version "$cachedir/devkit-prior.json")" "1.2.3" "prior version captured"
+}
+
+test_record_prior_writes_file
 print -r -- "PASS: test-version-check.zsh (semver compare)"

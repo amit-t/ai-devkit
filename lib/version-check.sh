@@ -180,6 +180,22 @@ _wb_render_banner() {
     "$tool" "$local_v" "$latest" "$upgrade_cmd" "$changelog"
 }
 
+_wb_record_prior() {
+  local tool="$1"
+  local clone
+  clone="$(_wb_clone_path "$tool")"
+  [[ -z "$clone" || ! -d "$clone/.git" ]] && return 1
+  local sha v ts d record_p
+  sha="$(git -C "$clone" rev-parse HEAD 2>/dev/null)" || return 1
+  v="$(_wb_local_version "$tool")"
+  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  d="${WB_UPDATES_CACHE_DIR:-${HOME}/.cache/wb-updates}"
+  mkdir -p "$d"
+  record_p="$d/${tool}-prior.json"
+  jq -n --arg tool "$tool" --arg sha "$sha" --arg v "$v" --arg ts "$ts" \
+    '{tool:$tool, prior_sha:$sha, prior_version:$v, current_sha:null, current_version:null, upgraded_at:$ts}' > "$record_p"
+}
+
 _wb_versioncheck() {
   local tool="$1"
   local owner="${WB_UPSTREAM_OWNER:-amit-t}"
