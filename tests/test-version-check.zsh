@@ -116,4 +116,44 @@ test_fetch_upstream_via_gh_shim() {
 }
 
 test_fetch_upstream_via_gh_shim
+
+test_cache_miss_writes() {
+  local cachedir
+  cachedir="$(mktemp -d)"
+  trap "rm -rf '$cachedir'" EXIT
+  WB_UPDATES_CACHE_DIR="$cachedir"
+  local payload='{"version":"1.4.0","check_ttl_hours":12,"channel":"stable","requires":{}}'
+  _wb_cache_write devkit "$payload" 12
+  [[ -f "$cachedir/devkit.json" ]] || { print -r -- "FAIL: cache file not created"; exit 1; }
+  assert_eq "$(jq -r .upstream.version "$cachedir/devkit.json")" "1.4.0" "cache stores upstream"
+}
+
+test_cache_hit_within_ttl() {
+  local cachedir
+  cachedir="$(mktemp -d)"
+  trap "rm -rf '$cachedir'" EXIT
+  WB_UPDATES_CACHE_DIR="$cachedir"
+  local now ts
+  now="$(date -u +%s)"
+  ts="$(date -u -r "$now" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d "@$now" +%Y-%m-%dT%H:%M:%SZ)"
+  cat > "$cachedir/devkit.json" <<JSON
+{"tool":"devkit","checked_at":"$ts","ttl_hours":12,"upstream":{"version":"1.4.0","check_ttl_hours":12,"channel":"stable","requires":{}}}
+JSON
+  assert_eq "$(_wb_cache_is_fresh devkit)" "fresh" "fresh within ttl"
+}
+
+test_cache_stale_past_ttl() {
+  local cachedir
+  cachedir="$(mktemp -d)"
+  trap "rm -rf '$cachedir'" EXIT
+  WB_UPDATES_CACHE_DIR="$cachedir"
+  cat > "$cachedir/devkit.json" <<'JSON'
+{"tool":"devkit","checked_at":"1970-01-01T00:00:00Z","ttl_hours":12,"upstream":{"version":"1.4.0"}}
+JSON
+  assert_eq "$(_wb_cache_is_fresh devkit)" "stale" "stale past ttl"
+}
+
+test_cache_miss_writes
+test_cache_hit_within_ttl
+test_cache_stale_past_ttl
 print -r -- "PASS: test-version-check.zsh (semver compare)"

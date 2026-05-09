@@ -103,3 +103,56 @@ _wb_fetch_upstream() {
   fi
   return 1
 }
+
+_wb_cache_dir() {
+  echo "${WB_UPDATES_CACHE_DIR:-${HOME}/.cache/wb-updates}"
+}
+
+_wb_cache_path() {
+  local tool="$1"
+  local d
+  d="$(_wb_cache_dir)"
+  mkdir -p "$d"
+  echo "$d/${tool}.json"
+}
+
+_wb_cache_write() {
+  local tool="$1" payload="$2" ttl="$3"
+  local cache_p ts
+  cache_p="$(_wb_cache_path "$tool")"
+  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  jq -n --arg tool "$tool" --arg ts "$ts" --argjson ttl "$ttl" --argjson up "$payload" \
+        '{tool:$tool, checked_at:$ts, ttl_hours:$ttl, upstream:$up, rate_limit_reset_at:null}' \
+        > "$cache_p"
+}
+
+_wb_cache_is_fresh() {
+  local tool="$1"
+  local cache_p
+  cache_p="$(_wb_cache_path "$tool")"
+  [[ -f "$cache_p" ]] || { echo "missing"; return; }
+  local ts ttl
+  ts="$(jq -r .checked_at "$cache_p" 2>/dev/null)"
+  ttl="$(jq -r .ttl_hours "$cache_p" 2>/dev/null)"
+  [[ -z "$ts" || "$ts" == "null" ]] && { echo "stale"; return; }
+  local checked_at_epoch now_epoch age_seconds limit
+  checked_at_epoch="$(date -u -d "$ts" +%s 2>/dev/null \
+                     || date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$ts" +%s 2>/dev/null \
+                     || echo 0)"
+  now_epoch="$(date -u +%s)"
+  age_seconds=$(( now_epoch - checked_at_epoch ))
+  limit=$(( ttl * 3600 ))
+  if (( age_seconds < limit )); then echo "fresh"; else echo "stale"; fi
+}
+
+_wb_cache_read() {
+  local tool="$1"
+  local cache_p
+  cache_p="$(_wb_cache_path "$tool")"
+  jq -c '.upstream' "$cache_p" 2>/dev/null
+}
+
+_wb_cache_invalidate() {
+  local tool="$1"
+  rm -f "$(_wb_cache_path "$tool")"
+}
