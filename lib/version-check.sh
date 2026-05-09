@@ -19,3 +19,18 @@ _wb_compare_semver() {
   if (( a_patch > b_patch )); then echo "gt"; return; fi
   echo "eq"
 }
+
+_wb_check_requires() {
+  local constraint="$1" current="$2"
+  case "$constraint" in
+    '>='*)
+      local floor="${constraint#>=}"
+      local cmp
+      cmp="$(_wb_compare_semver "$current" "$floor")"
+      if [[ "$cmp" == "lt" ]]; then echo "fail"; else echo "ok"; fi
+      ;;
+    *)
+      echo "fail"
+      ;;
+  esac
+}

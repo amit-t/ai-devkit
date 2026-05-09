@@ -41,4 +41,18 @@ test_compare_semver_gt() {
 test_compare_semver_lt
 test_compare_semver_eq
 test_compare_semver_gt
+
+test_check_requires_pass() {
+  assert_eq "$(_wb_check_requires '>=1.2.0' '1.2.0')" "ok" ">=1.2.0 vs 1.2.0"
+  assert_eq "$(_wb_check_requires '>=1.2.0' '1.3.0')" "ok" ">=1.2.0 vs 1.3.0"
+  assert_eq "$(_wb_check_requires '>=1.2.0' '2.0.0')" "ok" ">=1.2.0 vs 2.0.0"
+}
+
+test_check_requires_fail() {
+  assert_eq "$(_wb_check_requires '>=1.2.0' '1.1.9')" "fail" ">=1.2.0 vs 1.1.9 fails"
+  assert_eq "$(_wb_check_requires '>=2.0.0' '1.99.99')" "fail" ">=2.0.0 vs 1.99.99 fails"
+}
+
+test_check_requires_pass
+test_check_requires_fail
 print -r -- "PASS: test-version-check.zsh (semver compare)"
