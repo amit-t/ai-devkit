@@ -89,3 +89,38 @@ v="$(jq -r .version "$clone4/version.json")"
 [[ "$v" == "1.0.0" ]] || { print -r -- "FAIL: rollback did not restore 1.0.0 (got $v)"; rm -rf "$scratch4" "$work4"; exit 1; }
 rm -rf "$scratch4" "$work4"
 print -r -- "PASS: devkit-upgrade rollback round-trip"
+
+# ── Test 5: Peer-requires block + --force bypass ──────────────────────────────
+scratch5="$(mktemp -d)"
+upstream5="$scratch5/upstream.git"
+clone5="$scratch5/clone"
+ralph_clone="$scratch5/ralph"
+"${REPO_ROOT}/tests/fixtures/bare-upstream/setup.sh" "$upstream5" "1.0.0"
+git clone -q "$upstream5" "$clone5"
+mkdir -p "$ralph_clone"
+printf '{"version":"0.5.0"}\n' > "$ralph_clone/version.json"
+
+work5="$(mktemp -d)"
+git clone -q "$upstream5" "$work5"
+printf '{"version":"1.1.0","check_ttl_hours":12,"channel":"stable","requires":{"ralph":">=1.0.0"},"changelog_url":"x"}\n' > "$work5/version.json"
+git -C "$work5" -c user.email=t@t -c user.name=t commit -aq -m "bump"
+git -C "$work5" push -q origin main
+
+set +e
+DEVKIT_CLONE="$clone5" \
+  RALPH_CLONE="$ralph_clone" \
+  WB_UPDATES_CACHE_DIR="$scratch5/cache" \
+  zsh "$UPGRADE" --yes --skip-install
+rc=$?
+set -e
+[[ "$rc" -eq 3 ]] || { print -r -- "FAIL: expected exit 3 on peer-floor block, got $rc"; rm -rf "$scratch5" "$work5"; exit 1; }
+
+DEVKIT_CLONE="$clone5" \
+  RALPH_CLONE="$ralph_clone" \
+  WB_UPDATES_CACHE_DIR="$scratch5/cache" \
+  zsh "$UPGRADE" --yes --force --skip-install
+
+v="$(jq -r .version "$clone5/version.json")"
+[[ "$v" == "1.1.0" ]] || { print -r -- "FAIL: --force did not allow upgrade (got $v)"; rm -rf "$scratch5" "$work5"; exit 1; }
+rm -rf "$scratch5" "$work5"
+print -r -- "PASS: devkit-upgrade peer-requires block + --force"
