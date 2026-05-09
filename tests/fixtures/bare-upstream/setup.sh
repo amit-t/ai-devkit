@@ -3,6 +3,7 @@ set -euo pipefail
 out="$1"
 ver="${2:-1.4.0}"
 git init --bare -q "$out"
+git -C "$out" symbolic-ref HEAD refs/heads/main
 work="$(mktemp -d)"
 trap "rm -rf '$work'" EXIT
 git -C "$work" init -q -b main
@@ -10,3 +11,4 @@ printf '{"version":"%s","released":"2026-05-09","check_ttl_hours":12,"channel":"
 git -C "$work" -c user.email=t@t -c user.name=t add version.json
 git -C "$work" -c user.email=t@t -c user.name=t commit -q -m "init"
 git -C "$work" push -q --mirror "$out"
+git -C "$out" symbolic-ref HEAD refs/heads/main
