@@ -17,6 +17,15 @@
 
 set -euo pipefail
 
+# ── Version-check preamble ──────────────────────────────────────────────────
+LIBVC="${HOME}/.local/share/wb-versioncheck/version-check.sh"
+if [[ -f "$LIBVC" ]]; then
+  # shellcheck disable=SC1090
+  _VERCHECK_LIB_DIR_OVERRIDE="${LIBVC:h}" . "$LIBVC"
+  WB_TEMPLATE_VERSION_FILE="${PWD}/.workbench-state/template-version.json" \
+    _wb_versioncheck wb || true
+fi
+
 SCRIPT_DIR="${0:A:h}"
 PROMPT_FILE="${SCRIPT_DIR}/update.prompt.md"
 
