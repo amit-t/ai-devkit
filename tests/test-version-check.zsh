@@ -156,4 +156,19 @@ JSON
 test_cache_miss_writes
 test_cache_hit_within_ttl
 test_cache_stale_past_ttl
+
+test_render_banner_update_available() {
+  local out
+  out="$(_wb_render_banner devkit 1.2.3 1.4.0 "https://example.com/changelog")"
+  case "$out" in
+    *"update 1.4.0 available"*) ;;
+    *) print -r -- "FAIL: banner missing 'update 1.4.0 available' — got '$out'"; exit 1 ;;
+  esac
+  case "$out" in
+    *"devkit.upgrade"*) ;;
+    *) print -r -- "FAIL: banner missing 'devkit.upgrade'"; exit 1 ;;
+  esac
+}
+
+test_render_banner_update_available
 print -r -- "PASS: test-version-check.zsh (semver compare)"

@@ -156,3 +156,16 @@ _wb_cache_invalidate() {
   local tool="$1"
   rm -f "$(_wb_cache_path "$tool")"
 }
+
+_wb_render_banner() {
+  local tool="$1" local_v="$2" latest="$3" changelog="$4"
+  local upgrade_cmd
+  case "$tool" in
+    devkit) upgrade_cmd="devkit.upgrade" ;;
+    ralph)  upgrade_cmd="ralph.upgrade"  ;;
+    wb)     upgrade_cmd="wb.upgrade"     ;;
+    *)      upgrade_cmd="${tool}.upgrade" ;;
+  esac
+  printf "[%s v%s] update %s available. Run %s. Changelog: %s\n" \
+    "$tool" "$local_v" "$latest" "$upgrade_cmd" "$changelog"
+}
