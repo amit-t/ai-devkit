@@ -190,6 +190,15 @@ if git diff --cached --quiet; then
 fi
 
 UPSTREAM_SHA="$(git rev-parse --short upstream/main)"
+
+# ── Stamp template-version.json so wb.upgrade nags fire correctly ──────────
+TEMPLATE_VERSION_FILE="$WB_DIR/.workbench-state/template-version.json"
+if upstream_v_json="$(git -C "$WB_DIR" show "upstream/main:version.json" 2>/dev/null)"; then
+  mkdir -p "$WB_DIR/.workbench-state"
+  printf '%s\n' "$upstream_v_json" | jq '. + {stamped_at: (now|todate)}' > "$TEMPLATE_VERSION_FILE"
+  git -C "$WB_DIR" add .workbench-state/template-version.json
+fi
+
 git commit -m "chore: sync template-owned files from ai-workbench@${UPSTREAM_SHA}"
 
 echo "Pushing..."
