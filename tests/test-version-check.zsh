@@ -70,4 +70,34 @@ test_clone_path_ralph_env() {
 
 test_clone_path_devkit_env
 test_clone_path_ralph_env
+
+test_local_version_from_clone() {
+  local fixture result
+  fixture="$(mktemp -d)"
+  trap "rm -rf '$fixture'" EXIT
+  printf '{"version":"1.2.3"}\n' > "$fixture/version.json"
+  result="$(DEVKIT_CLONE="$fixture" _wb_local_version devkit)"
+  assert_eq "$result" "1.2.3" "reads version from clone"
+}
+
+test_local_version_missing() {
+  local fixture result
+  fixture="$(mktemp -d)"
+  trap "rm -rf '$fixture'" EXIT
+  result="$(DEVKIT_CLONE="$fixture" _wb_local_version devkit)"
+  assert_eq "$result" "0.0.0" "missing -> 0.0.0"
+}
+
+test_local_version_corrupt() {
+  local fixture result
+  fixture="$(mktemp -d)"
+  trap "rm -rf '$fixture'" EXIT
+  printf 'not json\n' > "$fixture/version.json"
+  result="$(DEVKIT_CLONE="$fixture" _wb_local_version devkit 2>/dev/null)"
+  assert_eq "$result" "0.0.0" "corrupt -> 0.0.0 (warn)"
+}
+
+test_local_version_from_clone
+test_local_version_missing
+test_local_version_corrupt
 print -r -- "PASS: test-version-check.zsh (semver compare)"

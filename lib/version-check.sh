@@ -46,3 +46,25 @@ _wb_clone_path() {
   esac
   eval "echo \"\${$var:-}\""
 }
+
+_wb_local_version() {
+  local tool="$1"
+  local clone
+  clone="$(_wb_clone_path "$tool")"
+  if [[ "$tool" == "wb" ]]; then
+    if [[ -n "${WB_TEMPLATE_VERSION_FILE:-}" && -f "$WB_TEMPLATE_VERSION_FILE" ]]; then
+      jq -r '.version // "0.0.0"' "$WB_TEMPLATE_VERSION_FILE" 2>/dev/null || echo "0.0.0"
+      return
+    fi
+    echo "0.0.0"
+    return
+  fi
+  if [[ -z "$clone" || ! -f "$clone/version.json" ]]; then
+    echo "0.0.0"
+    return
+  fi
+  local v
+  v="$(jq -r '.version // "0.0.0"' "$clone/version.json" 2>/dev/null)" || v="0.0.0"
+  if [[ -z "$v" || "$v" == "null" ]]; then v="0.0.0"; fi
+  echo "$v"
+}
