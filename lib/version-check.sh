@@ -1,6 +1,16 @@
 # version-check.sh — bash-portable shared library for upgrade-notification.
 # Sourced from zsh today; body must remain bash-compatible (no zsh-only syntax).
 
+if [[ -n "${BASH_SOURCE[0]:-}" ]]; then
+  _VERCHECK_LIB_DIR="${BASH_SOURCE[0]%/*}"
+  [[ "$_VERCHECK_LIB_DIR" == "${BASH_SOURCE[0]}" ]] && _VERCHECK_LIB_DIR="."
+else
+  # Sourced from zsh. Caller should set _VERCHECK_LIB_DIR_OVERRIDE, otherwise
+  # try the install location as final fallback.
+  _VERCHECK_LIB_DIR="${_VERCHECK_LIB_DIR_OVERRIDE:-${HOME}/.local/share/wb-versioncheck}"
+fi
+. "$_VERCHECK_LIB_DIR/bootstrap-detection.sh"
+
 _wb_compare_semver() {
   local a="${1%%-*}" b="${2%%-*}"
   local a_major="${a%%.*}"; a="${a#*.}"

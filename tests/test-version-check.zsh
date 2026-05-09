@@ -195,4 +195,35 @@ test_versioncheck_emits_banner_on_upgrade_available() {
 }
 
 test_versioncheck_emits_banner_on_upgrade_available
+
+test_bootstrap_nag_fires_once() {
+  local cachedir clonedir
+  cachedir="$(mktemp -d)"
+  clonedir="$(mktemp -d)"
+  trap "rm -rf '$cachedir' '$clonedir'" EXIT
+  WB_UPDATES_CACHE_DIR="$cachedir"
+  DEVKIT_CLONE="$clonedir"
+  local out1 out2
+  out1="$(_wb_emit_bootstrap_nag devkit 2>&1)"
+  case "$out1" in
+    *"versioning system added"*) ;;
+    *) print -r -- "FAIL: first nag missing message"; exit 1 ;;
+  esac
+  out2="$(_wb_emit_bootstrap_nag devkit 2>&1)"
+  if [[ -n "$out2" ]]; then
+    print -r -- "FAIL: second call should be silent — got '$out2'"; exit 1
+  fi
+}
+
+test_bootstrap_clear_after_upgrade() {
+  local cachedir
+  cachedir="$(mktemp -d)"
+  trap "rm -rf '$cachedir'" EXIT
+  WB_UPDATES_CACHE_DIR="$cachedir"
+  _wb_mark_bootstrapped devkit
+  [[ -f "$cachedir/devkit-bootstrapped.flag" ]] || { print -r -- "FAIL: flag not created"; exit 1; }
+}
+
+test_bootstrap_nag_fires_once
+test_bootstrap_clear_after_upgrade
 print -r -- "PASS: test-version-check.zsh (semver compare)"
