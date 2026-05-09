@@ -145,6 +145,7 @@ _wb_cache_is_fresh() {
   ts="$(jq -r .checked_at "$cache_p" 2>/dev/null)"
   ttl="$(jq -r .ttl_hours "$cache_p" 2>/dev/null)"
   [[ -z "$ts" || "$ts" == "null" ]] && { echo "stale"; return; }
+  case "$ttl" in ''|*[!0-9]*) ttl="12" ;; esac
   local checked_at_epoch now_epoch age_seconds limit
   checked_at_epoch="$(date -u -d "$ts" +%s 2>/dev/null \
                      || date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$ts" +%s 2>/dev/null \
@@ -228,7 +229,8 @@ _wb_versioncheck() {
       return 0
     fi
     local ttl
-    ttl="$(echo "$upstream_json" | jq -r '.check_ttl_hours // 12')"
+    ttl="$(echo "$upstream_json" | jq -r '.check_ttl_hours // 12' 2>/dev/null)"
+    case "$ttl" in ''|*[!0-9]*) ttl="12" ;; esac
     _wb_cache_write "$tool" "$upstream_json" "$ttl"
   fi
 
