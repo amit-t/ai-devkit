@@ -356,6 +356,21 @@ Sanity check the preflight sees a healthy workspace:
 "${WB_DIR}/scripts/ralph-enable-check.sh"
 ```
 
+### 3.4c — Stamp template-version.json
+
+Capture which template version this wb was stamped from. Store in `.workbench-state/`.
+
+```bash
+mkdir -p "$WB_DIR/.workbench-state"
+gh api "repos/${ORG}/ai-workbench/contents/version.json?ref=main" \
+       -H "Accept: application/vnd.github.raw+json" 2>/dev/null \
+  | jq '. + {stamped_at: (now|todate)}' \
+  > "$WB_DIR/.workbench-state/template-version.json" || \
+  printf '{"version":"0.0.0","stamped_at":"unknown"}\n' > "$WB_DIR/.workbench-state/template-version.json"
+```
+
+This file gates `wb.upgrade` notifications. Future `wb.upgrade` runs refresh it.
+
 ### 3.5 — Render project.conf from template
 
 Read `${WB_DIR}/project.conf.template`. Substitute:
