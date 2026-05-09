@@ -34,3 +34,15 @@ _wb_check_requires() {
       ;;
   esac
 }
+
+_wb_clone_path() {
+  local tool="$1"
+  local var
+  case "$tool" in
+    devkit) var="DEVKIT_CLONE" ;;
+    ralph)  var="RALPH_CLONE"  ;;
+    wb)     echo ""; return ;;
+    *)      echo ""; return ;;
+  esac
+  eval "echo \"\${$var:-}\""
+}

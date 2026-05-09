@@ -55,4 +55,19 @@ test_check_requires_fail() {
 
 test_check_requires_pass
 test_check_requires_fail
+
+test_clone_path_devkit_env() {
+  local result
+  result="$(DEVKIT_CLONE=/tmp/fake-devkit _wb_clone_path devkit)"
+  assert_eq "$result" "/tmp/fake-devkit" "DEVKIT_CLONE wins"
+}
+
+test_clone_path_ralph_env() {
+  local result
+  result="$(RALPH_CLONE=/tmp/fake-ralph _wb_clone_path ralph)"
+  assert_eq "$result" "/tmp/fake-ralph" "RALPH_CLONE wins"
+}
+
+test_clone_path_devkit_env
+test_clone_path_ralph_env
 print -r -- "PASS: test-version-check.zsh (semver compare)"
