@@ -242,4 +242,51 @@ test_record_prior_writes_file() {
 }
 
 test_record_prior_writes_file
+
+test_cache_is_fresh_non_numeric_ttl_falls_back() {
+  local cachedir
+  cachedir="$(mktemp -d)"
+  trap "rm -rf '$cachedir'" EXIT
+  WB_UPDATES_CACHE_DIR="$cachedir"
+  local now ts
+  now="$(date -u +%s)"
+  ts="$(date -u -r "$now" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d "@$now" +%Y-%m-%dT%H:%M:%SZ)"
+  cat > "$cachedir/devkit.json" <<JSON
+{"tool":"devkit","checked_at":"$ts","ttl_hours":"banana","upstream":{"version":"1.4.0"}}
+JSON
+  assert_eq "$(_wb_cache_is_fresh devkit)" "fresh" "non-numeric ttl falls back to 12h default and reports fresh"
+}
+
+test_cache_is_fresh_non_numeric_ttl_falls_back
+
+test_versioncheck_fires_bootstrap_nag_when_local_is_zero() {
+  local cachedir respdir clonedir
+  cachedir="$(mktemp -d)"
+  respdir="$(mktemp -d)"
+  clonedir="$(mktemp -d)"
+  trap "rm -rf '$cachedir' '$respdir' '$clonedir'" EXIT
+  WB_UPDATES_CACHE_DIR="$cachedir"
+  GH_SHIM_RESPONSES_DIR="$respdir"
+  DEVKIT_CLONE="$clonedir"
+  source "${REPO_ROOT}/tests/helpers/gh-shim.sh"
+  # No version.json in clone -> local is 0.0.0
+  local key
+  key="$(_compute_key "api" "repos/amit-t/ai-devkit/contents/version.json?ref=main" "-H" "Accept: application/vnd.github.raw+json")"
+  printf '{"version":"1.4.0","check_ttl_hours":12,"channel":"stable","requires":{},"changelog_url":""}\n' > "$respdir/$key.json"
+  local out
+  out="$(WB_UPSTREAM_OWNER=amit-t WB_UPSTREAM_REPO_devkit=ai-devkit _wb_versioncheck devkit 2>&1)"
+  case "$out" in
+    *"versioning system added"*) ;;
+    *) print -r -- "FAIL: bootstrap nag did not fire on local==0.0.0 — got '$out'"; exit 1 ;;
+  esac
+  # Second call: nag should NOT fire (flag set)
+  local out2
+  out2="$(WB_UPSTREAM_OWNER=amit-t WB_UPSTREAM_REPO_devkit=ai-devkit _wb_versioncheck devkit 2>&1)"
+  case "$out2" in
+    *"versioning system added"*) print -r -- "FAIL: bootstrap nag fired twice"; exit 1 ;;
+  esac
+}
+
+test_versioncheck_fires_bootstrap_nag_when_local_is_zero
+
 print -r -- "PASS: test-version-check.zsh (semver compare)"

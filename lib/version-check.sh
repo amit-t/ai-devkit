@@ -217,6 +217,12 @@ _wb_versioncheck() {
     return 0
   fi
 
+  local local_check
+  local_check="$(_wb_local_version "$tool")"
+  if [[ "$local_check" == "0.0.0" ]]; then
+    _wb_emit_bootstrap_nag "$tool"
+  fi
+
   local fresh
   fresh="$(_wb_cache_is_fresh "$tool")"
   local upstream_json
