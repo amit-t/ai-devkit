@@ -107,6 +107,27 @@ Covers the regressions Devin has flagged in past runs (e.g. `orgs.wb` PATH/symli
 
 ---
 
+## Versioning + upgrades
+
+ai-devkit ships under semver. Every release bumps `version.json` (handled by release-please). To update your local clone:
+
+```bash
+devkit.upgrade            # interactive y/N
+devkit.upgrade --yes      # unattended
+devkit.upgrade --rollback # revert to prior version
+```
+
+To see status of all your tools (devkit, ralph, wb-template if inside a stamped wb):
+
+```bash
+devkit doctor
+devkit doctor --fix       # upgrades all stale tools in dep order
+```
+
+See `docs/versioning.md` for the full system. First-time setup: `ROLLOUT-VERSIONING.md`.
+
+---
+
 ## Related
 
 Part of the [ai-workbench](https://github.com/amit-t/ai-workbench) ecosystem.
