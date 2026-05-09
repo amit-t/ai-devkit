@@ -63,3 +63,29 @@ set -e
 [[ "$rc" -eq 2 ]] || { print -r -- "FAIL: expected exit 2 on feature branch, got $rc"; rm -rf "$scratch3"; exit 1; }
 rm -rf "$scratch3"
 print -r -- "PASS: devkit-upgrade feature-branch refusal"
+
+# ── Test 4: Rollback round-trip ───────────────────────────────────────────────
+scratch4="$(mktemp -d)"
+upstream4="$scratch4/upstream.git"
+clone4="$scratch4/clone"
+"${REPO_ROOT}/tests/fixtures/bare-upstream/setup.sh" "$upstream4" "1.0.0"
+git clone -q "$upstream4" "$clone4"
+
+work4="$(mktemp -d)"
+git clone -q "$upstream4" "$work4"
+printf '{"version":"1.1.0","check_ttl_hours":12,"channel":"stable","requires":{},"changelog_url":"x"}\n' > "$work4/version.json"
+git -C "$work4" -c user.email=t@t -c user.name=t commit -aq -m "bump"
+git -C "$work4" push -q origin main
+
+DEVKIT_CLONE="$clone4" \
+  WB_UPDATES_CACHE_DIR="$scratch4/cache" \
+  zsh "$UPGRADE" --yes --skip-install
+
+DEVKIT_CLONE="$clone4" \
+  WB_UPDATES_CACHE_DIR="$scratch4/cache" \
+  zsh "$UPGRADE" --rollback --skip-install
+
+v="$(jq -r .version "$clone4/version.json")"
+[[ "$v" == "1.0.0" ]] || { print -r -- "FAIL: rollback did not restore 1.0.0 (got $v)"; rm -rf "$scratch4" "$work4"; exit 1; }
+rm -rf "$scratch4" "$work4"
+print -r -- "PASS: devkit-upgrade rollback round-trip"
