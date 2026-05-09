@@ -169,3 +169,49 @@ _wb_render_banner() {
   printf "[%s v%s] update %s available. Run %s. Changelog: %s\n" \
     "$tool" "$local_v" "$latest" "$upgrade_cmd" "$changelog"
 }
+
+_wb_versioncheck() {
+  local tool="$1"
+  local owner="${WB_UPSTREAM_OWNER:-amit-t}"
+  local repo_var="WB_UPSTREAM_REPO_${tool}"
+  local repo
+  eval "repo=\"\${$repo_var:-}\""
+  if [[ -z "$repo" ]]; then
+    case "$tool" in
+      devkit) repo="ai-devkit" ;;
+      ralph)  repo="ai-ralph"  ;;
+      wb)     repo="ai-workbench" ;;
+      *) return 0 ;;
+    esac
+  fi
+
+  if ! command -v jq >/dev/null 2>&1; then
+    printf "[%s] jq missing — required for update notifications. brew install jq\n" "$tool" >&2
+    return 0
+  fi
+
+  local fresh
+  fresh="$(_wb_cache_is_fresh "$tool")"
+  local upstream_json
+  if [[ "$fresh" == "fresh" ]]; then
+    upstream_json="$(_wb_cache_read "$tool")"
+  else
+    printf "[%s] checking for updates...\n" "$tool" >&2
+    if ! upstream_json="$(_wb_fetch_upstream "$owner" "$repo" 2>/dev/null)"; then
+      printf "[%s] update check skipped (offline)\n" "$tool" >&2
+      return 0
+    fi
+    local ttl
+    ttl="$(echo "$upstream_json" | jq -r '.check_ttl_hours // 12')"
+    _wb_cache_write "$tool" "$upstream_json" "$ttl"
+  fi
+
+  local local_v latest changelog
+  local_v="$(_wb_local_version "$tool")"
+  latest="$(echo "$upstream_json" | jq -r '.version // "0.0.0"')"
+  changelog="$(echo "$upstream_json" | jq -r '.changelog_url // ""')"
+  if [[ "$(_wb_compare_semver "$local_v" "$latest")" == "lt" ]]; then
+    _wb_render_banner "$tool" "$local_v" "$latest" "$changelog" >&2
+  fi
+  return 0
+}

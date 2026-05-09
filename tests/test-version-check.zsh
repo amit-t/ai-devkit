@@ -171,4 +171,28 @@ test_render_banner_update_available() {
 }
 
 test_render_banner_update_available
+
+test_versioncheck_emits_banner_on_upgrade_available() {
+  local cachedir respdir clonedir
+  cachedir="$(mktemp -d)"
+  respdir="$(mktemp -d)"
+  clonedir="$(mktemp -d)"
+  trap "rm -rf '$cachedir' '$respdir' '$clonedir'" EXIT
+  WB_UPDATES_CACHE_DIR="$cachedir"
+  GH_SHIM_RESPONSES_DIR="$respdir"
+  DEVKIT_CLONE="$clonedir"
+  source "${REPO_ROOT}/tests/helpers/gh-shim.sh"
+  printf '{"version":"1.0.0"}\n' > "$clonedir/version.json"
+  local key
+  key="$(_compute_key "api" "repos/amit-t/ai-devkit/contents/version.json?ref=main" "-H" "Accept: application/vnd.github.raw+json")"
+  printf '{"version":"1.4.0","check_ttl_hours":12,"channel":"stable","requires":{},"changelog_url":"https://example.com"}\n' > "$respdir/$key.json"
+  local out
+  out="$(WB_UPSTREAM_OWNER=amit-t WB_UPSTREAM_REPO_devkit=ai-devkit _wb_versioncheck devkit 2>&1)"
+  case "$out" in
+    *"update 1.4.0 available"*) ;;
+    *) print -r -- "FAIL: versioncheck did not emit banner — got '$out'"; exit 1 ;;
+  esac
+}
+
+test_versioncheck_emits_banner_on_upgrade_available
 print -r -- "PASS: test-version-check.zsh (semver compare)"
