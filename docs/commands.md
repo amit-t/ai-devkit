@@ -2,7 +2,7 @@
 title: Commands
 layout: default
 eyebrow: Reference
-subtitle: init.wb · join.wb · update.wb · orgs.wb
+subtitle: init.wb · join.wb · wb.upgrade · orgs.wb · devkit.upgrade · ralph.upgrade · devkit doctor
 ---
 
 ## init.wb
@@ -43,17 +43,95 @@ Runs preflight → clones workbench (or pulls if already local) → reads `proje
 - `gh repo view <url>` access probe — catches private-repo / wrong-account scenarios before any clone.
 - No `ralph-enable` inside the workbench — initiator already committed `.ralph/` config; joiner only needs the global `ralph` install.
 
-## update.wb
+## wb.upgrade
 
-Refresh a workbench from the template.
+Refresh a workbench from the template. Canonical replacement for `update.wb`.
 
 ```
-update.wb                    # inside a workbench directory
-update.wb --agent devin
-update.wb --agent claude
+wb.upgrade                    # inside a workbench directory
+wb.upgrade --agent devin
+wb.upgrade --agent claude
 ```
 
 Pulls updates from the `ai-workbench` template upstream, applying changes to `template_owned` paths listed in `.workbench-manifest.json`. User-authored artifacts (PRDs, specs, BDD, test cases) are left untouched.
+
+After the merge, `wb.upgrade` writes the upstream version into `.workbench-manifest.json` so `devkit doctor` can report workbench state correctly.
+
+### update.wb (deprecated)
+
+`update.wb` still works and runs the same flow, but prints a one-line deprecation nag pointing at `wb.upgrade`. Use the new name in scripts and docs.
+
+## devkit.upgrade
+
+Pull a newer release of the `ai-devkit` clone and reinstall.
+
+```
+devkit.upgrade                  # interactive
+devkit.upgrade --yes            # unattended (no prompt)
+devkit.upgrade --rollback       # revert one step
+devkit.upgrade --force          # bypass peer-version requires
+devkit.upgrade --skip-install   # pull only, do not run install.zsh
+```
+
+Flow:
+
+1. Verifies the `ai-devkit` clone has a clean working tree and is on `main`.
+2. Checks peer-version `requires` from `version.json`. If a peer is below the floor, refuses with a clear message. Use `--force` to bypass.
+3. Records the prior commit + version into the per-tool cache so `--rollback` can revert.
+4. `git pull --ff-only` and re-runs `install.zsh` to refresh aliases.
+5. Prints the new version and a reload hint (`exec zsh`).
+
+Exit codes:
+
+| Code | Meaning |
+|------|---------|
+| 0 | Upgrade succeeded (or already current). |
+| 1 | Abort by user, or `--rollback` with no prior recorded. |
+| 2 | Working tree dirty, or not on `main`. |
+| 3 | Peer-version requirement not satisfied (use `--force` to bypass). |
+
+## ralph.upgrade
+
+Same shape as `devkit.upgrade`, applied to the `ai-ralph` clone.
+
+```
+ralph.upgrade
+ralph.upgrade --yes
+ralph.upgrade --rollback
+ralph.upgrade --force
+ralph.upgrade --skip-install
+```
+
+Same exit codes as `devkit.upgrade`.
+
+## devkit doctor
+
+Show version state for all three tools, optionally upgrade them in dependency order.
+
+```
+devkit doctor                   # status table only
+devkit doctor --check-only      # exit 4 if anything behind (CI gate)
+devkit doctor --fix             # interactive upgrade in dep order
+devkit doctor --fix --yes       # unattended upgrade
+```
+
+Status table shape:
+
+```
+Tool          Local    Latest   Status
+ai-devkit     1.0.0    1.0.0    up to date
+ai-ralph      0.9.0    1.1.0    upgrade available
+ai-workbench  1.0.0    1.0.0    up to date
+```
+
+Exit codes:
+
+| Code | Meaning |
+|------|---------|
+| 0 | All up to date (or `--fix` succeeded). |
+| 4 | `--check-only` and at least one tool is behind. |
+
+`--fix` runs upgrades in this order: `ralph.upgrade`, then `devkit.upgrade`, then `wb.upgrade`. If any step fails it stops and surfaces the failing tool's exit code.
 
 ## orgs.wb
 

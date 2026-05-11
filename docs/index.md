@@ -26,6 +26,7 @@ layout: default
 - **Install the CLI?** Start at [Getting started]({{ '/getting-started.html' | relative_url }}).
 - **Command reference?** See [Commands]({{ '/commands.html' | relative_url }}).
 - **Manage GitHub orgs?** See [Orgs]({{ '/orgs.html' | relative_url }}).
+- **Stay current?** See [Versioning + upgrades]({{ '/versioning.html' | relative_url }}) for `devkit.upgrade`, `ralph.upgrade`, `wb.upgrade`, and `devkit doctor`.
 
 ## Typical Flow
 
