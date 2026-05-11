@@ -28,14 +28,18 @@ cd ~/Projects/Tools-Utilities/ai-devkit
 ./install.zsh
 ```
 
-`install.zsh` symlinks four commands into `~/.local/bin/` and appends aliases to `~/.zshrc`:
+`install.zsh` symlinks the workbench commands into `~/.local/bin/` and appends aliases to `~/.zshrc`:
 
 | Command | Alias Variants | Purpose |
 |---------|----------------|---------|
 | `init.wb` | `init.wb.dev`, `init.wb.cly` | Create new workbench |
 | `join.wb` | `join.wb.dev`, `join.wb.cly` | Join existing workbench |
-| `update.wb` | `update.wb.dev`, `update.wb.cly` | Pull template updates |
-| `orgs.wb` | — | Manage GitHub org list |
+| `wb.upgrade` | `wb.upgrade.dev`, `wb.upgrade.cly` | Pull template updates (replaces `update.wb`) |
+| `update.wb` | (deprecated) | Old name for `wb.upgrade`; still works, prints a nag |
+| `orgs.wb` | (none) | Manage GitHub org list |
+| `devkit.upgrade` | (none) | Pull a newer `ai-devkit` release and reinstall |
+| `ralph.upgrade` | (none) | Pull a newer `ai-ralph` release and reinstall |
+| `devkit doctor` | (none) | Show version state for all three tools; offers `--fix` |
 
 The `.dev` variants force the Devin agent, `.cly` variants force Claude.
 
@@ -45,6 +49,19 @@ Ensure `~/.local/bin` is on `PATH`:
 export PATH="$HOME/.local/bin:$PATH"   # add to ~/.zshrc if missing
 source ~/.zshrc
 ```
+
+### One-time bootstrap (existing clones)
+
+If you cloned `ai-devkit` before the versioning release, run the bootstrap step once so the new aliases (`devkit.upgrade`, `ralph.upgrade`, `wb.upgrade`, `devkit doctor`) become available:
+
+```bash
+cd ~/Projects/Tools-Utilities/ai-devkit
+git pull
+./install.zsh
+exec zsh
+```
+
+`install.zsh` is idempotent: re-running it will not duplicate alias lines or `DEVKIT_CLONE` exports. After `exec zsh`, the new commands are on PATH and the first run of any tool will perform a one-time version-check banner. See [Versioning + upgrades]({{ '/versioning.html' | relative_url }}) for details.
 
 ## First Workbench
 
@@ -87,6 +104,7 @@ Preflight runs, you get appended to CODEOWNERS, any extra repos you bring get re
 ## Next Steps
 
 - [Commands]({{ '/commands.html' | relative_url }}) — full CLI reference
+- [Versioning + upgrades]({{ '/versioning.html' | relative_url }}): `devkit.upgrade`, `ralph.upgrade`, `wb.upgrade`, `devkit doctor`
 - [Orgs]({{ '/orgs.html' | relative_url }}) — machine-local GitHub org list
 - [ai-workbench docs]({{ links.ai_workbench_pages }}) — what lives inside the workbench template
 - [ai-ralph README]({{ links.ai_ralph_repo }}) — autonomous loop engines

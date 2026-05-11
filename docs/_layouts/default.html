@@ -20,6 +20,7 @@
     <a class="site-nav-brand" href="{{ '/' | relative_url }}">AI Devkit</a>
     <a href="{{ '/getting-started.html' | relative_url }}">Getting Started</a>
     <a href="{{ '/commands.html' | relative_url }}">Commands</a>
+    <a href="{{ '/versioning.html' | relative_url }}">Versioning</a>
     <a href="{{ '/orgs.html' | relative_url }}">Orgs</a>
     <a href="{{ links.ai_workbench_pages }}" target="_blank" rel="noreferrer">ai-workbench</a>
     <a href="{{ links.ai_ralph_repo }}" target="_blank" rel="noreferrer">ai-ralph</a>
@@ -36,7 +37,7 @@
         {% assign segments = page.url | remove_first: '/' | remove: '.html' | split: '/' %}
         {% assign last = segments | last %}
         {% for seg in segments %}
-          {% capture crumb %}{% if seg == 'getting-started' %}Getting Started{% elsif seg == 'commands' %}Commands{% elsif seg == 'orgs' %}Orgs{% else %}{{ seg }}{% endif %}{% endcapture %}
+          {% capture crumb %}{% if seg == 'getting-started' %}Getting Started{% elsif seg == 'commands' %}Commands{% elsif seg == 'versioning' %}Versioning{% elsif seg == 'orgs' %}Orgs{% else %}{{ seg }}{% endif %}{% endcapture %}
           {% if seg == last %}
             <li aria-current="page">{{ crumb | strip }}</li>
           {% else %}
