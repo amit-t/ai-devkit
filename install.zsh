@@ -2,9 +2,40 @@
 # install.zsh — Install ai-devkit commands globally.
 #   init.wb / join.wb / update.wb (+ .dev / .cly variants)
 #
-# Usage: ./install.zsh
+# Usage: ./install.zsh [--yes|-y|--non-interactive]
+#
+# Non-interactive mode:
+#   Set env DEVKIT_NONINTERACTIVE=1, or pass --yes / -y / --non-interactive.
+#   In non-interactive mode any future prompt accepts the safe default:
+#     - org slug = $DEVKIT_DEFAULT_ORG (or the current git remote owner)
+#     - "install ralph?" = yes
+#     - "install devkit aliases?" = yes
+#   Interactive TTY behaviour with neither flag/env set is unchanged.
+#   The CI smoke workflow (.github/workflows/smoke-install.yml) drives the
+#   non-interactive path. The script today has no prompts but new prompts
+#   added later must consult DEVKIT_NONINTERACTIVE before reading stdin.
 
 set -euo pipefail
+
+# ── Flag parsing (non-interactive support) ──────────────────────────────────
+DEVKIT_NONINTERACTIVE="${DEVKIT_NONINTERACTIVE:-0}"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --yes|-y|--non-interactive)
+      DEVKIT_NONINTERACTIVE=1
+      shift
+      ;;
+    -h|--help)
+      sed -n '2,16p' "$0"
+      exit 0
+      ;;
+    *)
+      print -u2 -r -- "Unknown flag: $1"
+      exit 2
+      ;;
+  esac
+done
+export DEVKIT_NONINTERACTIVE
 
 SCRIPT_DIR="${0:A:h}"
 BIN_DIR="${HOME}/.local/bin"
@@ -98,9 +129,14 @@ case "\$1" in
     shift
     exec "$SCRIPT_DIR/devkit-doctor/devkit-doctor.zsh" "\$@"
     ;;
+  upgrade)
+    shift
+    exec "$SCRIPT_DIR/devkit-upgrade/devkit-upgrade.zsh" "\$@"
+    ;;
   *)
     print -u2 -r -- "Unknown subcommand: \$1"
     print -u2 -r -- "Usage: devkit doctor [--check-only|--fix]"
+    print -u2 -r -- "       devkit upgrade [--check-only|--yes|--rollback]"
     exit 1
     ;;
 esac
