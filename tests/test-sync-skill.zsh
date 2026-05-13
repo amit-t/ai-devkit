@@ -11,7 +11,9 @@ SYNC="${REPO_ROOT}/scripts/sync-skill.zsh"
 
 [[ -f "$SYNC" ]] || { print -u2 -r -- "FAIL: $SYNC not found"; exit 1; }
 
-scratch="$(mktemp -d -t syncskill-test.XXXXXX)"
+# Portable mktemp (avoid -t flag — GNU vs BSD disagree on semantics).
+scratch="$(mktemp -d "${TMPDIR:-/tmp}/syncskill-test.XXXXXX")" \
+  || { print -u2 -r -- "FAIL: mktemp failed: $scratch"; exit 1; }
 trap 'rm -rf "$scratch"' EXIT
 
 fake_at_skills="$scratch/at-skills"
@@ -22,6 +24,12 @@ print -r -- "# SKILL" > "$fake_at_skills/repo-context-scan/SKILL.md"
 print -r -- "# README" > "$fake_at_skills/repo-context-scan/README.md"
 print -r -- "# CTX" > "$fake_at_skills/repo-context-scan/CONTEXT-FORMAT.md"
 
+# Isolate from host git config (CI runners ship with safe.directory + PR
+# extraheader that can interfere with tempdir repo operations).
+export GIT_CONFIG_GLOBAL="$scratch/.gitconfig-empty"
+export GIT_CONFIG_SYSTEM=/dev/null
+: > "$GIT_CONFIG_GLOBAL"
+
 git -C "$fake_at_skills" init -q
 git -C "$fake_at_skills" -c user.email=t@t -c user.name=test add -A
 git -C "$fake_at_skills" -c user.email=t@t -c user.name=test commit -q -m "init"
@@ -31,8 +39,17 @@ git -C "$fake_at_skills" remote add origin git@github.com-at:foo/bar.git
 mkdir -p "$fake_devkit"
 
 # Test 1: first sync seeds files + writes .upstream with correct SHA + normalizes SSH host-alias to HTTPS.
-AT_SKILLS_DIR="$fake_at_skills" DEVKIT_DIR="$fake_devkit" \
-  zsh "$SYNC" repo-context-scan >/dev/null
+# Capture stderr on failure so CI surfaces sync-skill errors instead of
+# silently aborting under set -e.
+set +e
+sync_out="$(AT_SKILLS_DIR="$fake_at_skills" DEVKIT_DIR="$fake_devkit" zsh "$SYNC" repo-context-scan 2>&1)"
+sync_rc=$?
+set -e
+if (( sync_rc != 0 )); then
+  print -u2 -r -- "FAIL: first sync exited rc=$sync_rc"
+  print -u2 -r -- "$sync_out"
+  exit 1
+fi
 
 vendored="$fake_devkit/skills/repo-context-scan"
 [[ -f "$vendored/SKILL.md" ]]          || { print -u2 -r -- "FAIL: SKILL.md missing after sync"; exit 1; }

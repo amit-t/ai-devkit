@@ -70,13 +70,10 @@ SCAN_DIR="${out#SCAN_DIR=}"
 [[ ! -d "$SCAN_DIR/docs/adr" ]] || { print -u2 -r -- "FAIL: worktree's docs/adr not pre-wiped"; exit 1; }
 print -r -- "PASS: setup creates worktree and pre-wipes prior scan output"
 
-# assert: lock present (either flock-file or mkdir-dir form)
+# assert: lock present (mkdir-dir form — flock branch was dropped because
+# fd-based flock doesn't survive the setup→finalize process boundary).
 LOCK="$WB/.context-scan/.lock"
-if (( $+commands[flock] )); then
-  [[ -f "$LOCK" ]] || { print -u2 -r -- "FAIL: flock lock file missing at $LOCK"; exit 1; }
-else
-  [[ -d "$LOCK" ]] || { print -u2 -r -- "FAIL: mkdir lock dir missing at $LOCK"; exit 1; }
-fi
+[[ -d "$LOCK" ]] || { print -u2 -r -- "FAIL: lock dir missing at $LOCK"; exit 1; }
 print -r -- "PASS: setup acquired the per-WB lock"
 
 # source repo HEAD captured for later assertion
