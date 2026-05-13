@@ -75,7 +75,10 @@ if [[ -z "$upstream_sha" ]]; then
   exit 1
 fi
 synced_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-synced_by="$(git config user.name 2>/dev/null)"
+# `|| true` because zsh + set -e aborts on a failing command substitution; a
+# CI runner with no git user.name set returns rc=1, which would otherwise
+# kill the script silently before we hit the empty-string fallback below.
+synced_by="$(git config user.name 2>/dev/null || true)"
 [[ -z "$synced_by" ]] && synced_by="${USER:-unknown}"
 
 mkdir -p "${DEVKIT_DIR}/skills"
