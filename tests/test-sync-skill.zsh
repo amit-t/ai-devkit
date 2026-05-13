@@ -50,10 +50,23 @@ print -u2 -r -- "DEBUG: git remote add done"
 mkdir -p "$fake_devkit"
 print -u2 -r -- "DEBUG: about to invoke first sync"
 
-# Test 1: first sync seeds files + writes .upstream with correct SHA + normalizes SSH host-alias to HTTPS.
-AT_SKILLS_DIR="$fake_at_skills" DEVKIT_DIR="$fake_devkit" \
-  zsh "$SYNC" repo-context-scan >/dev/null
+# Capture sync-skill stdout+stderr+exit so failures surface in CI logs
+# instead of silently aborting the test under set -e.
+set +e
+sync_out="$(AT_SKILLS_DIR="$fake_at_skills" DEVKIT_DIR="$fake_devkit" zsh "$SYNC" repo-context-scan 2>&1)"
+sync_rc=$?
+set -e
+if (( sync_rc != 0 )); then
+  print -u2 -r -- "FAIL: first sync exited rc=$sync_rc"
+  print -u2 -r -- "----- sync output -----"
+  print -u2 -r -- "$sync_out"
+  print -u2 -r -- "----- end sync output -----"
+  exit 1
+fi
+print -u2 -r -- "DEBUG: first sync rc=0"
 
+# Test 1: first sync seeds files + writes .upstream with correct SHA + normalizes SSH host-alias to HTTPS.
+# (Already invoked above with stderr capture for early-fail diagnostics.)
 vendored="$fake_devkit/skills/repo-context-scan"
 [[ -f "$vendored/SKILL.md" ]]          || { print -u2 -r -- "FAIL: SKILL.md missing after sync"; exit 1; }
 [[ -f "$vendored/README.md" ]]         || { print -u2 -r -- "FAIL: README.md missing after sync"; exit 1; }
