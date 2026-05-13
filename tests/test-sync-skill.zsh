@@ -25,11 +25,12 @@ print -r -- "# CTX" > "$fake_at_skills/repo-context-scan/CONTEXT-FORMAT.md"
 git -C "$fake_at_skills" init -q
 git -C "$fake_at_skills" -c user.email=t@t -c user.name=test add -A
 git -C "$fake_at_skills" -c user.email=t@t -c user.name=test commit -q -m "init"
-git -C "$fake_at_skills" remote add origin https://example.com/fake/skills.git
+# Use SSH host-alias form to exercise upstream_repo normalization (Q14 schema).
+git -C "$fake_at_skills" remote add origin git@github.com-at:foo/bar.git
 
 mkdir -p "$fake_devkit"
 
-# Test 1: first sync seeds files + writes .upstream with correct SHA.
+# Test 1: first sync seeds files + writes .upstream with correct SHA + normalizes SSH host-alias to HTTPS.
 AT_SKILLS_DIR="$fake_at_skills" DEVKIT_DIR="$fake_devkit" \
   zsh "$SYNC" repo-context-scan >/dev/null
 
@@ -48,11 +49,11 @@ got_sha="$(grep '^upstream_sha:' "$vendored/.upstream" | awk '{print $2}')"
 }
 
 got_repo="$(grep '^upstream_repo:' "$vendored/.upstream" | awk '{print $2}')"
-[[ "$got_repo" == "https://example.com/fake/skills.git" ]] || {
-  print -u2 -r -- "FAIL: .upstream repo mismatch (got $got_repo)"
+[[ "$got_repo" == "https://github.com/foo/bar" ]] || {
+  print -u2 -r -- "FAIL: .upstream repo not normalized to canonical HTTPS (got $got_repo, want https://github.com/foo/bar)"
   exit 1
 }
-print -r -- "PASS: first sync vendors files and pins upstream sha"
+print -r -- "PASS: first sync vendors files, pins upstream sha, normalizes git@ host-alias to HTTPS"
 
 # Test 2: rsync --delete removes files dropped upstream.
 rm "$fake_at_skills/repo-context-scan/CONTEXT-FORMAT.md"
@@ -98,5 +99,29 @@ print -r -- "$out" | grep -q "git clone" || {
   exit 1
 }
 print -r -- "PASS: missing AT_SKILLS_DIR fails loud with clone hint"
+
+# Test 5: upstream_repo normalization covers ssh:// and HTTPS-with-.git forms.
+# (Test 1 already covered the git@github.com-alias:owner/repo.git form.)
+
+# 5a: ssh://git@github.com/owner/repo form -> https://github.com/owner/repo
+git -C "$fake_at_skills" remote set-url origin "ssh://git@github.com/baz/qux"
+AT_SKILLS_DIR="$fake_at_skills" DEVKIT_DIR="$fake_devkit" \
+  zsh "$SYNC" repo-context-scan >/dev/null
+got_repo_ssh="$(grep '^upstream_repo:' "$vendored/.upstream" | awk '{print $2}')"
+[[ "$got_repo_ssh" == "https://github.com/baz/qux" ]] || {
+  print -u2 -r -- "FAIL: ssh:// form not normalized (got $got_repo_ssh, want https://github.com/baz/qux)"
+  exit 1
+}
+
+# 5b: https://github.com/owner/repo.git -> https://github.com/owner/repo (strip .git)
+git -C "$fake_at_skills" remote set-url origin "https://github.com/alpha/beta.git"
+AT_SKILLS_DIR="$fake_at_skills" DEVKIT_DIR="$fake_devkit" \
+  zsh "$SYNC" repo-context-scan >/dev/null
+got_repo_https="$(grep '^upstream_repo:' "$vendored/.upstream" | awk '{print $2}')"
+[[ "$got_repo_https" == "https://github.com/alpha/beta" ]] || {
+  print -u2 -r -- "FAIL: https .git suffix not stripped (got $got_repo_https, want https://github.com/alpha/beta)"
+  exit 1
+}
+print -r -- "PASS: upstream_repo normalization handles ssh:// and https-with-.git forms"
 
 print -r -- "All sync-skill tests passed."

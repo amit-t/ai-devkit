@@ -2,8 +2,8 @@
 # sync-skill.zsh — Vendor refresh from a local at-skills clone into ai-devkit.
 #
 # Usage:
-#   bash scripts/sync-skill.zsh                 # sync all KNOWN_SKILLS
-#   bash scripts/sync-skill.zsh repo-context-scan
+#   zsh scripts/sync-skill.zsh                  # sync all KNOWN_SKILLS
+#   zsh scripts/sync-skill.zsh repo-context-scan
 #
 # Env overrides:
 #   AT_SKILLS_DIR  Path to local at-skills clone. Default: sibling of devkit clone.
@@ -37,7 +37,7 @@ if [[ ! -d "$AT_SKILLS_DIR/.git" ]]; then
   err "  git clone git@github.com:amit-t/skills.git ${MAIN_TOPLEVEL:h}/at-skills"
   err ""
   err "Or set AT_SKILLS_DIR to your existing clone:"
-  err "  AT_SKILLS_DIR=/path/to/skills bash scripts/sync-skill.zsh"
+  err "  AT_SKILLS_DIR=/path/to/skills zsh scripts/sync-skill.zsh"
   exit 1
 fi
 
@@ -52,7 +52,23 @@ else
   skills=("${KNOWN_SKILLS[@]}")
 fi
 
-upstream_repo="$(git -C "$AT_SKILLS_DIR" remote get-url origin 2>/dev/null || print 'https://github.com/amit-t/skills')"
+raw_repo="$(git -C "$AT_SKILLS_DIR" remote get-url origin 2>/dev/null || print 'https://github.com/amit-t/skills')"
+
+# Normalize to canonical HTTPS form (per Q14 .upstream schema):
+#   git@github.com[-alias]:owner/repo(.git)?           -> https://github.com/owner/repo
+#   ssh://git@github.com[-alias][:port]/owner/repo(.git)? -> https://github.com/owner/repo
+#   https://github.com/owner/repo(.git)?               -> https://github.com/owner/repo
+upstream_repo="$raw_repo"
+if [[ "$upstream_repo" == git@github.com*:*/* ]]; then
+  upstream_repo="${upstream_repo#git@github.com*:}"
+  upstream_repo="https://github.com/${upstream_repo%.git}"
+elif [[ "$upstream_repo" == ssh://git@github.com*/*/* ]]; then
+  upstream_repo="${upstream_repo#ssh://git@github.com*/}"
+  upstream_repo="https://github.com/${upstream_repo%.git}"
+else
+  upstream_repo="${upstream_repo%.git}"
+fi
+
 upstream_sha="$(git -C "$AT_SKILLS_DIR" rev-parse HEAD)"
 synced_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 synced_by="$(git config user.name 2>/dev/null || print -r -- "${USER:-unknown}")"
