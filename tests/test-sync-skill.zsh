@@ -124,4 +124,52 @@ got_repo_https="$(grep '^upstream_repo:' "$vendored/.upstream" | awk '{print $2}
 }
 print -r -- "PASS: upstream_repo normalization handles ssh:// and https-with-.git forms"
 
+# Test 6: empty git user.name falls back to $USER (not blank synced_by).
+git -C "$fake_at_skills" remote set-url origin "https://github.com/foo/bar"
+empty_name_home="$scratch/home-empty"
+mkdir -p "$empty_name_home"
+cat > "$empty_name_home/.gitconfig" <<'GITCFG'
+[user]
+	name =
+	email = t@t
+GITCFG
+(
+  cd "$empty_name_home"
+  HOME="$empty_name_home" USER=testuser \
+    GIT_CONFIG_GLOBAL="$empty_name_home/.gitconfig" \
+    GIT_CONFIG_SYSTEM=/dev/null \
+    AT_SKILLS_DIR="$fake_at_skills" DEVKIT_DIR="$fake_devkit" \
+    zsh "$SYNC" repo-context-scan >/dev/null
+)
+got_by="$(grep '^synced_by:' "$vendored/.upstream" | awk '{print $2}')"
+[[ -n "$got_by" && "$got_by" == "testuser" ]] || {
+  print -u2 -r -- "FAIL: empty git user.name should fall back to \$USER (got '$got_by', want 'testuser')"
+  exit 1
+}
+print -r -- "PASS: empty git user.name falls back to \$USER"
+
+# Test 7: at-skills with no commits fails loud, doesn't write bogus .upstream.
+no_commit_at="$scratch/at-skills-empty"
+mkdir -p "$no_commit_at/repo-context-scan"
+print -r -- "# x" > "$no_commit_at/repo-context-scan/SKILL.md"
+git -C "$no_commit_at" init -q
+git -C "$no_commit_at" remote add origin "https://github.com/foo/bar"
+empty_devkit="$scratch/ai-devkit-empty"
+mkdir -p "$empty_devkit"
+set +e
+out2="$(AT_SKILLS_DIR="$no_commit_at" DEVKIT_DIR="$empty_devkit" zsh "$SYNC" repo-context-scan 2>&1)"
+rc2=$?
+set -e
+[[ $rc2 -ne 0 ]] || { print -u2 -r -- "FAIL: rev-parse HEAD failure should exit non-zero"; exit 1; }
+print -r -- "$out2" | grep -q "Cannot read HEAD" || {
+  print -u2 -r -- "FAIL: missing HEAD error message not present"
+  print -u2 -r -- "$out2"
+  exit 1
+}
+[[ ! -f "$empty_devkit/skills/repo-context-scan/.upstream" ]] || {
+  print -u2 -r -- "FAIL: .upstream should not be written when HEAD missing"
+  exit 1
+}
+print -r -- "PASS: empty at-skills HEAD fails loud, no bogus .upstream written"
+
 print -r -- "All sync-skill tests passed."

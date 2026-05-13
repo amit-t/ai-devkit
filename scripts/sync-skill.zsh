@@ -69,9 +69,14 @@ else
   upstream_repo="${upstream_repo%.git}"
 fi
 
-upstream_sha="$(git -C "$AT_SKILLS_DIR" rev-parse HEAD)"
+upstream_sha="$(git -C "$AT_SKILLS_DIR" rev-parse --verify HEAD 2>/dev/null || true)"
+if [[ -z "$upstream_sha" ]]; then
+  err "Cannot read HEAD from $AT_SKILLS_DIR (no commits, or detached corruption)"
+  exit 1
+fi
 synced_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-synced_by="$(git config user.name 2>/dev/null || print -r -- "${USER:-unknown}")"
+synced_by="$(git config user.name 2>/dev/null)"
+[[ -z "$synced_by" ]] && synced_by="${USER:-unknown}"
 
 mkdir -p "${DEVKIT_DIR}/skills"
 
