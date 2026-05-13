@@ -2,7 +2,7 @@
 title: Commands
 layout: default
 eyebrow: Reference
-subtitle: init.wb · join.wb · wb.upgrade · orgs.wb · devkit.upgrade · ralph.upgrade · devkit doctor
+subtitle: init.wb · join.wb · wb.upgrade · wb.rescan · orgs.wb · devkit.upgrade · ralph.upgrade · devkit doctor
 ---
 
 ## init.wb
@@ -16,7 +16,13 @@ init.wb --agent claude            # force Claude
 init.wb --cwd /path/to/empty/dir  # override target directory
 ```
 
-Runs preflight → interview → `gh repo create --template` → clones registered code repos → renders `project.conf` + `EPIC-PIPELINE.md` + `CODEOWNERS` → installs `ai-ralph` (once per machine) → scopes `ralph-enable` to the workbench only → commits + pushes.
+Runs preflight → interview → `gh repo create --template` → clones registered code repos → renders `project.conf` + `EPIC-PIPELINE.md` + `CODEOWNERS` → installs `ai-ralph` (once per machine) → scopes `ralph-enable` to the workbench only → **builds wb-owned context per cloned repo** → commits + pushes.
+
+- After each registered repo is cloned, `init.wb` runs the vendored
+  `repo-context-scan` skill against it (sequentially) and writes
+  `context/<name>/CONTEXT.md` plus an aggregate `context/README.md`. A
+  scan failure is non-fatal — a stub is written and init continues. See
+  [Repo Context Scan]({{ '/repo-context-scan.html' | relative_url }}).
 
 **Preflight** (Step 0 in `init-workbench/init.prompt.md`):
 
@@ -36,7 +42,12 @@ join.wb <workbench-url> --agent devin
 join.wb <workbench-url> --agent claude
 ```
 
-Runs preflight → clones workbench (or pulls if already local) → reads `project.conf` → prompts for extra repos to register → appends joiner to the `*` line in `CODEOWNERS` → commits + pushes.
+Runs preflight → clones workbench (or pulls if already local) → reads `project.conf` → prompts for extra repos to register → **scans newly-registered repos** → appends joiner to the `*` line in `CODEOWNERS` → commits + pushes.
+
+- Newly-registered repos are scanned in the same way `init.wb` scans
+  initial repos. Existing rows in `context/README.md` are preserved
+  when the aggregate is refreshed. See
+  [Repo Context Scan]({{ '/repo-context-scan.html' | relative_url }}).
 
 **Preflight additions vs `init.wb`:**
 
@@ -60,6 +71,34 @@ After the merge, `wb.upgrade` writes the upstream version into `.workbench-manif
 ### update.wb (deprecated)
 
 `update.wb` still works and runs the same flow, but prints a one-line deprecation nag pointing at `wb.upgrade`. Use the new name in scripts and docs.
+
+## wb.rescan
+
+Refresh wb-owned context for registered repos. Recovery path for failed
+scans, drift after source-repo updates, and on-demand re-runs. Lives in
+the workbench at `${WB_DIR}/scripts/wb-rescan.sh`, aliased via
+`aliases.sh`.
+
+```
+wb.rescan <repo>                       # rescan one repo (auto-wipes any stub)
+wb.rescan --all                        # rescan every REPOS entry in project.conf
+wb.rescan --aggregate-only             # refresh context/README.md only, no scans
+wb.rescan --force <repo>               # discard user-authored prose + re-scan
+wb.rescan --agent devin|claude <repo>  # override engine for this invocation
+```
+
+Each invocation:
+
+1. Looks up `DEVKIT_CLONE` to find `${DEVKIT_DIR}/lib/wb-context-scan.zsh`.
+2. For each target repo: `setup` → dispatch the configured agent against
+   the worktree sandbox → `finalize` (harvest or stub).
+3. After all targets, runs `aggregate` to regenerate `context/README.md`.
+4. Self-commits with `chore: rescan context for <list>`.
+5. **Never pushes** — you review the diff and push when ready.
+
+See [Repo Context Scan]({{ '/repo-context-scan.html' | relative_url }})
+for the full feature reference, including the worktree sandbox model,
+the CONTEXT.md frontmatter schema, and failure-mode handling.
 
 ## devkit.upgrade
 
@@ -132,6 +171,17 @@ Exit codes:
 | 4 | `--check-only` and at least one tool is behind. |
 
 `--fix` runs upgrades in this order: `ralph.upgrade`, then `devkit.upgrade`, then `wb.upgrade`. If any step fails it stops and surfaces the failing tool's exit code.
+
+In addition to version rows, `devkit doctor` checks **global** scan
+health (`repo-context-scan` vendored, engine symlinks intact,
+`wb-context-scan` lib present, `DEVKIT_DEFAULT_ENGINE` set, configured
+engine on PATH). When run from inside a stamped workbench it also
+checks **wb-scope** scan health (`context/` exists, matches
+`project.conf`, no stale stubs, aggregate README current,
+`.context-scan/` sandbox clean). `--fix` repairs deterministic global
+items only; wb-scope failures print suggested `wb.rescan` commands as
+advisory output and never auto-invoke. See
+[Repo Context Scan]({{ '/repo-context-scan.html' | relative_url }}#doctor-integration).
 
 ## orgs.wb
 
