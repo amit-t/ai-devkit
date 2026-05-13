@@ -11,7 +11,9 @@ SYNC="${REPO_ROOT}/scripts/sync-skill.zsh"
 
 [[ -f "$SYNC" ]] || { print -u2 -r -- "FAIL: $SYNC not found"; exit 1; }
 
-scratch="$(mktemp -d -t syncskill-test.XXXXXX)"
+# Portable mktemp (avoid -t flag — GNU vs BSD disagree on semantics).
+scratch="$(mktemp -d "${TMPDIR:-/tmp}/syncskill-test.XXXXXX")" \
+  || { print -u2 -r -- "FAIL: mktemp failed: $scratch"; exit 1; }
 trap 'rm -rf "$scratch"' EXIT
 
 fake_at_skills="$scratch/at-skills"
@@ -21,6 +23,13 @@ mkdir -p "$fake_at_skills/repo-context-scan"
 print -r -- "# SKILL" > "$fake_at_skills/repo-context-scan/SKILL.md"
 print -r -- "# README" > "$fake_at_skills/repo-context-scan/README.md"
 print -r -- "# CTX" > "$fake_at_skills/repo-context-scan/CONTEXT-FORMAT.md"
+
+# Isolate from any host-side git config (CI runners ship with safe.directory
+# defaults and PR-extraheader that can break in-place git operations on
+# tempdir repos).
+export GIT_CONFIG_GLOBAL="$scratch/.gitconfig-empty"
+export GIT_CONFIG_SYSTEM=/dev/null
+: > "$GIT_CONFIG_GLOBAL"
 
 git -C "$fake_at_skills" init -q
 git -C "$fake_at_skills" -c user.email=t@t -c user.name=test add -A
