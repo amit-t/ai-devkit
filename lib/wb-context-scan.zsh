@@ -34,13 +34,14 @@ _warn() { print -u2 -r -- "[!] $*"; }
 _err()  { print -u2 -r -- "[x] $*"; }
 
 # ─── lock primitives ─────────────────────────────────────────────────────
-# Lock path: <WB_DIR>/.context-scan/.lock
-#   - flock available: use a real fd-based lock on .lock (a file)
-#   - flock missing:   mkdir .lock (atomic create) as a poor-man's lock
+# Lock path: <WB_DIR>/.context-scan/.lock — a directory created atomically.
 #
-# Both produce identical observable behaviour: setup() acquires the lock;
-# finalize() releases it. The lock is per-WB_DIR, not per-repo, matching
-# the plan's "prevent concurrent scans" requirement.
+# The lock must persist across the process boundary between `setup` (which
+# acquires) and `finalize` (which releases) — they run as separate processes
+# with the agent scan happening in between. An fd-based flock would close
+# when setup exits, defeating the purpose. mkdir-as-lock uses filesystem
+# state, so it survives the gap. Works uniformly on macOS and Linux without
+# a flock dependency.
 
 _lock_path() {
   print -r -- "${1}/.context-scan/.lock"
@@ -50,37 +51,18 @@ _lock_acquire() {
   local wb="$1" lock
   lock="$(_lock_path "$wb")"
   mkdir -p "${wb}/.context-scan"
-  if (( $+commands[flock] )); then
-    # flock-based: touch the file, take an exclusive non-blocking lock, leave
-    # an fd open by writing the lock pid into the file. Release path closes fd.
-    : > "$lock"
-    exec 9>"$lock"
-    if ! flock -n 9; then
-      _err "lock contended: another wb-context-scan run is in progress (${lock})"
-      return 1
-    fi
-    print -r -- "$$" >&9
-    return 0
-  else
-    # mkdir-as-lock: atomic create. If it already exists, contended.
-    if ! mkdir "$lock" 2>/dev/null; then
-      _err "lock contended: another wb-context-scan run is in progress (${lock})"
-      return 1
-    fi
-    print -r -- "$$" > "${lock}/owner.pid"
-    return 0
+  if ! mkdir "$lock" 2>/dev/null; then
+    _err "lock contended: another wb-context-scan run is in progress (${lock})"
+    return 1
   fi
+  print -r -- "$$" > "${lock}/owner.pid"
+  return 0
 }
 
 _lock_release() {
   local wb="$1" lock
   lock="$(_lock_path "$wb")"
-  if (( $+commands[flock] )); then
-    [[ -f "$lock" ]] && rm -f "$lock"
-    exec 9>&- 2>/dev/null || true
-  else
-    [[ -d "$lock" ]] && rm -rf "$lock"
-  fi
+  [[ -d "$lock" ]] && rm -rf "$lock"
   return 0
 }
 
@@ -587,12 +569,15 @@ cmd_aggregate() {
     local map="${ctx_root}/${name}/CONTEXT-MAP.md"
     local link target row_status concepts display_role
 
+    # Tiebreaker: a repo produces EITHER CONTEXT.md (single context) OR
+    # CONTEXT-MAP.md (multi-context). Both shouldn't coexist for the same
+    # repo; if they do (e.g. mid-migration), CONTEXT.md wins — it's the
+    # canonical single-context output and matches `_harvest_one`'s default.
     if [[ -f "$ctx" ]]; then
       target="./${name}/CONTEXT.md"
     elif [[ -f "$map" ]]; then
       target="./${name}/CONTEXT-MAP.md"
     else
-      # context dir exists but neither CONTEXT.md nor CONTEXT-MAP.md
       target=""
     fi
 
