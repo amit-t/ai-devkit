@@ -11,6 +11,7 @@ layout: default
 - **Template refresh** — `update.wb` pulls template-owned skill / config updates without touching your authored outputs.
 - **Org list management** — `orgs.wb` (list/add/remove/show) keeps a machine-local GitHub org list. The org hosting your devkit checkout is auto-included.
 - **Preflight hygiene** — both `init.wb` and `join.wb` verify required CLIs, confirm the active `gh` account, and offer switch / login flows before touching remote resources.
+- **Per-repo domain context** — `init.wb` / `join.wb` auto-build a `context/<name>/CONTEXT.md` for every registered source repo, plus an aggregate `context/README.md`. Recover failed scans with `wb.rescan`. See [Repo Context Scan]({{ '/repo-context-scan.html' | relative_url }}).
 - **ai-ralph bootstrap** — on first run per machine, devkit clones and installs [`ai-ralph`]({{ links.ai_ralph_repo }}), then scopes `ralph-enable` to the new workbench only (never into sibling service repos).
 
 ## Three Repos, One Story
@@ -27,6 +28,7 @@ layout: default
 - **Command reference?** See [Commands]({{ '/commands.html' | relative_url }}).
 - **Manage GitHub orgs?** See [Orgs]({{ '/orgs.html' | relative_url }}).
 - **Stay current?** See [Versioning + upgrades]({{ '/versioning.html' | relative_url }}) for `devkit.upgrade`, `ralph.upgrade`, `wb.upgrade`, and `devkit doctor`.
+- **Curious about the auto-built `context/` dir?** See [Repo Context Scan]({{ '/repo-context-scan.html' | relative_url }}) for the scan model, frontmatter schema, and `wb.rescan` recovery.
 
 ## Typical Flow
 
