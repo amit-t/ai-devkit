@@ -495,6 +495,28 @@ If `ralph-enable` prompts interactively and the agent cannot answer, fall back t
 
 Note: `join.wb` deliberately does **not** rebuild `.ralph/`. By the time a joiner clones, the initiator has already run this step and committed the workbench-specific `.ralph/`; preserving it keeps both collaborators on the same agent config.
 
+### 3.10c — Build wb-owned context per cloned repo
+
+For each registered repo in `REPOS` (sequential — # v1.1 will parallelize):
+
+1. `SCAN_DIR=$(zsh "${DEVKIT_DIR}/lib/wb-context-scan.zsh" setup "${WB_DIR}" "${name}")`
+2. Run scan:
+   - Claude engine: dispatch Task tool sub-agent with `cwd=${SCAN_DIR}`, prompt
+     `"Invoke /repo-context-scan in this directory. Return one paragraph
+     summarizing term count + ADR count + any blockers. Do NOT modify
+     files outside this cwd. Do NOT make commits."`
+   - Devin engine: `cd ${SCAN_DIR}; invoke /repo-context-scan inline.`
+3. Capture sub-agent / inline exit status into `FAIL_REASON` (empty on success).
+4. `zsh "${DEVKIT_DIR}/lib/wb-context-scan.zsh" finalize "${WB_DIR}" "${name}" ${FAIL_REASON:+--fail-reason "${FAIL_REASON}"}`
+
+After all repos:
+
+```bash
+zsh "${DEVKIT_DIR}/lib/wb-context-scan.zsh" aggregate "${WB_DIR}"
+```
+
+Continue to 3.11. The wb's initial commit (3.12) picks up `context/` automatically.
+
 ### 3.11 — Source aliases (note only)
 
 Tell the user to run:
