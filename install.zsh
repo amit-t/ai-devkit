@@ -39,6 +39,44 @@ if ! grep -qF "$DEVKIT_LINE" "$ZPROFILE" 2>/dev/null; then
   ok "wrote DEVKIT_CLONE to $ZPROFILE"
 fi
 
+# ── DEVKIT_DEFAULT_ENGINE in .zprofile ─────────────────────────────────────
+# Prefer devin if it's on PATH (Q9 locked decision), else claude.
+DEFAULT_ENGINE="claude"
+(( $+commands[devin] )) && DEFAULT_ENGINE="devin"
+ENGINE_LINE="export DEVKIT_DEFAULT_ENGINE=\"$DEFAULT_ENGINE\""
+if ! grep -qF "$ENGINE_LINE" "$ZPROFILE" 2>/dev/null; then
+  # Strip any prior DEVKIT_DEFAULT_ENGINE assignment so the value
+  # doesn't stack stale lines in ~/.zprofile.
+  if [[ -f "$ZPROFILE" ]] && grep -q '^export DEVKIT_DEFAULT_ENGINE=' "$ZPROFILE"; then
+    tmp_zp="$(mktemp)"
+    grep -v '^export DEVKIT_DEFAULT_ENGINE=' "$ZPROFILE" > "$tmp_zp"
+    mv "$tmp_zp" "$ZPROFILE"
+  fi
+  if ! grep -q "EXTERNAL PROJECT ALIASES" "$ZPROFILE" 2>/dev/null; then
+    printf "\n# === EXTERNAL PROJECT ALIASES ===\n" >> "$ZPROFILE"
+  fi
+  printf "%s\n" "$ENGINE_LINE" >> "$ZPROFILE"
+  ok "wrote DEVKIT_DEFAULT_ENGINE=$DEFAULT_ENGINE to $ZPROFILE"
+fi
+
+# ── Skill symlinks (multi-engine) ──────────────────────────────────────────
+# Vendored skill source lives in the devkit clone. We expose it to each
+# supported engine's skills dir via idempotent symlinks (Q3 locked decision).
+SKILL_SRC="${SCRIPT_DIR}/skills/repo-context-scan"
+for engine_dir in "$HOME/.claude/skills" "$HOME/.devin/skills" "$HOME/.agents/skills"; do
+  mkdir -p "$engine_dir"
+  ln -sfn "$SKILL_SRC" "$engine_dir/repo-context-scan"
+  ok "linked: $engine_dir/repo-context-scan -> $SKILL_SRC"
+done
+
+# Devkit-internal exposure: mirror the same skill under the devkit clone so
+# engine-aware tooling can find it relative to DEVKIT_CLONE too.
+for internal_dir in "${SCRIPT_DIR}/.claude/skills" "${SCRIPT_DIR}/.agents/skills"; do
+  mkdir -p "$internal_dir"
+  ln -sfn "$SKILL_SRC" "$internal_dir/repo-context-scan"
+  ok "linked: $internal_dir/repo-context-scan -> $SKILL_SRC"
+done
+
 install_cmd() {
   local name="$1" target="$2"
   ln -sf "$target" "$BIN_DIR/$name"
