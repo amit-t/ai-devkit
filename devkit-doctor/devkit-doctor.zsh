@@ -53,8 +53,21 @@ USAGE
   esac
 done
 
+_detect_wb_root() {
+  local d="${PWD:A}"
+  while [[ -n "$d" && "$d" != "/" && "$d" != "$HOME" ]]; do
+    if [[ -f "$d/.workbench-manifest.json" && -f "$d/project.conf" ]]; then
+      print -r -- "$d"
+      return 0
+    fi
+    d="${d:h}"
+  done
+  return 1
+}
+
 is_stamped_wb=false
-if [[ -f "$PWD/.workbench-manifest.json" && -f "$PWD/project.conf" ]]; then
+WB_ROOT=""
+if WB_ROOT="$(_detect_wb_root 2>/dev/null)" && [[ -n "$WB_ROOT" ]]; then
   is_stamped_wb=true
 fi
 
@@ -112,7 +125,7 @@ for tool in devkit ralph; do
 done
 
 if $is_stamped_wb; then
-  state="$(WB_TEMPLATE_VERSION_FILE="$PWD/.workbench-state/template-version.json" fetch_tool_state wb)"
+  state="$(WB_TEMPLATE_VERSION_FILE="${WB_ROOT}/.workbench-state/template-version.json" fetch_tool_state wb)"
   local_v="${state%%|*}"
   latest="${state##*|}"
   render_row "wb" "$local_v" "$latest"
@@ -260,7 +273,7 @@ if $is_stamped_wb; then
   print -r -- "WB-CHECK                         STATUS  DETAIL"
 
   # WB-Check 1 — context/ exists
-  ctx_root="${PWD}/context"
+  ctx_root="${WB_ROOT}/context"
   wb1_status=""
   wb1_detail=""
   if [[ -d "$ctx_root" ]]; then
@@ -285,7 +298,7 @@ if $is_stamped_wb; then
     repos_in_conf+=("$line")
   done < <(zsh -c "
     set +e
-    source '${PWD}/project.conf' 2>/dev/null
+    source '${WB_ROOT}/project.conf' 2>/dev/null
     for entry in \"\${REPOS[@]}\"; do
       name=''
       for kv in \${(s.;.)entry}; do
@@ -404,7 +417,7 @@ if $is_stamped_wb; then
   # WB-Check 5 — .context-scan/ worktree clean
   wb5_status=""
   wb5_detail=""
-  scan_root="${PWD}/.context-scan"
+  scan_root="${WB_ROOT}/.context-scan"
   if [[ ! -d "$scan_root" ]]; then
     wb5_status="OK"
     wb5_detail="absent"

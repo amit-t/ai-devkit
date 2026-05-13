@@ -394,4 +394,25 @@ case "$out10" in
 esac
 print -r -- "PASS: sub-test 10 — vendored skill SHA banner present in default output"
 
+# ─── Sub-test 11: walk-up wb-root detection from repos/<name>/ subdir ──
+# Simulates running `devkit doctor` from inside a cloned source repo under
+# the wb. Should still surface WB-CHECK rows by walking up to find
+# project.conf + .workbench-manifest.json.
+root11="$(baseline t11)"
+wb11="$root11/wb"
+mkdir -p "$wb11/repos/foo/src"
+print -r -- '{}' > "$wb11/.workbench-manifest.json"
+cat > "$wb11/project.conf" <<CONF
+REPOS=(
+  "name=foo;url=https://example.com/foo;role=service"
+)
+CONF
+printf 'package foo\n' > "$wb11/repos/foo/src/foo.go"
+out11="$(cd "$wb11/repos/foo/src" && run_doctor "$root11/devkit" "$root11/home" "$root11/cache" "$root11/shim" "$root11/ralph")"
+case "$out11" in
+  *"WB-CHECK"*"context/ exists"*) ;;
+  *) print -u2 "FAIL: sub-test 11 walk-up: WB-CHECK header missing when run from repos/foo/src"; print -u2 -r -- "$out11"; exit 1 ;;
+esac
+print -r -- "PASS: sub-test 11 — walk-up detection activates WB-CHECK from nested subdir"
+
 print -r -- "All doctor-context-checks tests passed."
