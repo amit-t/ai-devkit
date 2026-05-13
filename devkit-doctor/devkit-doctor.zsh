@@ -38,10 +38,18 @@ USAGE
   esac
 done
 
+check_wsl_mnt_path() {
+  if [[ "$PWD" == /mnt/* ]]; then
+    print -ru2 -- "WARNING: doctor running from /mnt/ (DrvFs). Clone repos under \$HOME instead, DrvFs is ~10x slower and breaks fsync semantics."
+  fi
+}
+
 is_stamped_wb=false
 if [[ -f "$PWD/.workbench-manifest.json" && -f "$PWD/project.conf" ]]; then
   is_stamped_wb=true
 fi
+
+check_wsl_mnt_path
 
 fetch_tool_state() {
   local tool="$1"
