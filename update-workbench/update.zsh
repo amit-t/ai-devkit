@@ -142,15 +142,18 @@ if [[ -z "$TEMPLATE_PATHS" ]]; then
 fi
 
 # ── Check for local edits on template_owned paths ────────────────────────────
+# Note: loop variable is `tpl_path`, not `path`, because zsh maps the lowercase
+# special parameter `path` to the `PATH` env var (tied array). Using `path` as
+# a read target wipes PATH and breaks every subsequent command in the loop.
 DIRTY=""
-while IFS= read -r path; do
-  [[ -z "$path" ]] && continue
+while IFS= read -r tpl_path; do
+  [[ -z "$tpl_path" ]] && continue
   # Expand globs; git checkout accepts pathspecs.
   # Use git diff to see if the pathspec has uncommitted changes.
-  if git diff --quiet -- "$path" 2>/dev/null && git diff --cached --quiet -- "$path" 2>/dev/null; then
+  if git diff --quiet -- "$tpl_path" 2>/dev/null && git diff --cached --quiet -- "$tpl_path" 2>/dev/null; then
     continue
   fi
-  DIRTY="$DIRTY\n  $path"
+  DIRTY="$DIRTY\n  $tpl_path"
 done <<< "$TEMPLATE_PATHS"
 
 if [[ -n "$DIRTY" ]]; then
@@ -162,9 +165,9 @@ fi
 # ── Dry run? ─────────────────────────────────────────────────────────────────
 if [[ "$DRY_RUN" == true ]]; then
   echo "Changes that would be pulled from upstream/main for template_owned paths:"
-  while IFS= read -r path; do
-    [[ -z "$path" ]] && continue
-    git diff --stat upstream/main -- "$path" || true
+  while IFS= read -r tpl_path; do
+    [[ -z "$tpl_path" ]] && continue
+    git diff --stat upstream/main -- "$tpl_path" || true
   done <<< "$TEMPLATE_PATHS"
   exit 0
 fi
@@ -172,12 +175,12 @@ fi
 # ── Apply ────────────────────────────────────────────────────────────────────
 echo "Pulling template-owned paths..."
 UPDATED=()
-while IFS= read -r path; do
-  [[ -z "$path" ]] && continue
-  if git checkout upstream/main -- "$path" 2>/dev/null; then
-    UPDATED+=("$path")
+while IFS= read -r tpl_path; do
+  [[ -z "$tpl_path" ]] && continue
+  if git checkout upstream/main -- "$tpl_path" 2>/dev/null; then
+    UPDATED+=("$tpl_path")
   else
-    echo "  (skipped / not present) $path"
+    echo "  (skipped / not present) $tpl_path"
   fi
 done <<< "$TEMPLATE_PATHS"
 
