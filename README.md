@@ -32,8 +32,16 @@ Run once per machine. After that, the commands are available from any directory.
 | `init.wb`                  | Initiator | Devin (falls back to Claude)               | `init.wb.dev`, `init.wb.cly`       |
 | `join.wb <workbench-url>`  | Joiner    | Devin (falls back to Claude)               | `join.wb.dev`, `join.wb.cly`       |
 | `update.wb`                | Either    | Devin (only if interactive conflict)       | `update.wb.dev`, `update.wb.cly`   |
+| `wb.rescan`                | Either    | Devin (falls back to Claude)               | `--agent devin\|claude` override   |
 
-All three commands launch the configured agent with a role-specific prompt. The agent handles the interview, repo creation, templating, and git operations — the shell scripts are thin launchers.
+All three core commands launch the configured agent with a role-specific prompt. The agent handles the interview, repo creation, templating, and git operations — the shell scripts are thin launchers.
+
+- **Auto-built repo context** — `init.wb` and `join.wb` produce
+  `context/<repo>/CONTEXT.md` per registered source repo, plus an
+  aggregate `context/README.md` index. Source repos are never mutated
+  (scans run in a throwaway `git worktree` sandbox). Failed scans
+  degrade to a stub; refresh or repair with `wb.rescan`. See
+  [docs/repo-context-scan.md](docs/repo-context-scan.md).
 
 ---
 

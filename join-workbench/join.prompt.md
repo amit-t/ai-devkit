@@ -269,6 +269,30 @@ This appends the entry idempotently and clones if needed. If `register-repo.sh` 
 
 ---
 
+## Step 5b — Build wb-owned context per new repo
+
+For each NEW repo in `added_repos` (sequential — # v1.1 will parallelize):
+
+1. `SCAN_DIR=$(zsh "${DEVKIT_DIR}/lib/wb-context-scan.zsh" setup "${WB_DIR}" "${name}")`
+2. Run scan:
+   - Claude engine: dispatch Task tool sub-agent with `cwd=${SCAN_DIR}`, prompt
+     `"Invoke /repo-context-scan in this directory. Return one paragraph
+     summarizing term count + ADR count + any blockers. Do NOT modify
+     files outside this cwd. Do NOT make commits."`
+   - Devin engine: `cd ${SCAN_DIR}; invoke /repo-context-scan inline.`
+3. Capture sub-agent / inline exit status into `FAIL_REASON` (empty on success).
+4. `zsh "${DEVKIT_DIR}/lib/wb-context-scan.zsh" finalize "${WB_DIR}" "${name}" ${FAIL_REASON:+--fail-reason "${FAIL_REASON}"}`
+
+After all new repos:
+
+```bash
+zsh "${DEVKIT_DIR}/lib/wb-context-scan.zsh" aggregate "${WB_DIR}"
+```
+
+`aggregate` preserves rows for existing repos and adds the new ones. The wb's join commit (Step 8) picks up `context/<new-repo>/` automatically.
+
+---
+
 ## Step 6 — Add joiner to CODEOWNERS
 
 `JOINER` already resolved in Step 0.
@@ -301,6 +325,10 @@ Ask the joiner which MCPs they want enabled. Never write literal tokens — use 
 ```bash
 cd "${WB_DIR}"
 git add project.conf .github/CODEOWNERS
+for repo in "${added_repos[@]}"; do
+  [[ -d "context/${repo}" ]] && git add "context/${repo}/"
+done
+[[ -f context/README.md ]] && git add context/README.md
 git diff --quiet && git diff --cached --quiet || \
   git commit -m "chore: @${JOINER} joined — added repos $(printf '%s ' ${added_repos[@]})"
 git push origin main
