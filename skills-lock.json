@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "repo-context-scan": {
+      "source": "amit-t/skills",
+      "sourceType": "github",
+      "skillPath": "repo-context-scan/SKILL.md",
+      "computedHash": "f363f7ecf887263cb5e0e9b965418ab631348012da089b908987c945cf813780"
+    }
+  }
+}
