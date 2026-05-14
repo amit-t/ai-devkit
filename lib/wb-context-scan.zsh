@@ -275,12 +275,16 @@ _extract_top_concepts() {
   local file="$1"
   [[ -f "$file" ]] || { print -r -- "—"; return 0; }
   local concepts
+  # `|| true` keeps the pipeline rc at 0 even when grep finds no matches
+  # (rc 1). Without it, `set -o pipefail` propagates rc 1 through the
+  # command substitution, and `set -e` aborts the whole aggregate step
+  # whenever a freshly-scanned CONTEXT.md has no `**bold**` concepts yet.
   concepts="$(grep -oE '\*\*[^*]+\*\*' "$file" 2>/dev/null \
                 | sed 's/\*\*//g' \
                 | awk '!seen[$0]++' \
                 | head -3 \
                 | paste -sd ',' - \
-                | sed 's/,/, /g')"
+                | sed 's/,/, /g' || true)"
   if [[ -z "$concepts" ]]; then
     print -r -- "—"
   else
