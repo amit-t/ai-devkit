@@ -4,6 +4,7 @@
 # Usage:
 #   devkit.upgrade               # prompt before pulling
 #   devkit.upgrade --yes         # skip prompt
+#   devkit.upgrade --check-only  # report stale state, exit 1 if stale, no changes
 #   devkit.upgrade --rollback    # revert to prior SHA
 #   devkit.upgrade --force       # bypass peer-floor check
 #   devkit.upgrade --skip-install  # (test only) skip running install.zsh
@@ -17,10 +18,12 @@ YES=false
 ROLLBACK=false
 FORCE=false
 SKIP_INSTALL=false
+CHECK_ONLY=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --yes) YES=true; shift ;;
+    --check-only) CHECK_ONLY=true; shift ;;
     --rollback) ROLLBACK=true; shift ;;
     --force) FORCE=true; shift ;;
     --skip-install) SKIP_INSTALL=true; shift ;;
@@ -84,6 +87,12 @@ upstream_v="$(print -r -- "$upstream_v_raw" | jq -r '.version // "0.0.0"')"
 if [[ "$(_wb_compare_semver "$local_v" "$upstream_v")" == "eq" ]]; then
   print -r -- "[devkit] already at $local_v"
   exit 0
+fi
+
+# --check-only: report state, do not pull or reinstall.
+if $CHECK_ONLY; then
+  print -r -- "[devkit] stale: local $local_v, upstream $upstream_v"
+  exit 1
 fi
 
 if ! $FORCE; then

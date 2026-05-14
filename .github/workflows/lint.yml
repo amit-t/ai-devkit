@@ -1,0 +1,97 @@
+name: lint
+
+on:
+  push:
+  pull_request:
+
+# Least-privilege GITHUB_TOKEN. Both jobs only check out the repo and run
+# linters, so read access to contents is sufficient.
+permissions:
+  contents: read
+
+jobs:
+  shell-lint:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck + zsh
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            sudo apt-get update
+            sudo apt-get install -y shellcheck zsh
+          else
+            brew install shellcheck
+          fi
+
+      - name: bash -n over tracked sh / bash files
+        run: |
+          set -euo pipefail
+          files="$(git ls-files '*.sh' '*.bash')"
+          if [[ -z "$files" ]]; then
+            echo "No *.sh / *.bash files tracked."
+            exit 0
+          fi
+          # shellcheck disable=SC2086
+          for f in $files; do
+            echo "bash -n $f"
+            bash -n "$f"
+          done
+
+      - name: zsh -n over tracked zsh files
+        run: |
+          set -euo pipefail
+          files="$(git ls-files '*.zsh')"
+          if [[ -z "$files" ]]; then
+            echo "No *.zsh files tracked."
+            exit 0
+          fi
+          for f in $files; do
+            echo "zsh -n $f"
+            zsh -n "$f"
+          done
+
+      - name: shellcheck on tracked sh files
+        run: |
+          set -euo pipefail
+          files="$(git ls-files '*.sh')"
+          if [[ -z "$files" ]]; then
+            echo "No *.sh files tracked."
+            exit 0
+          fi
+          # SC1091 (source-not-found) is suppressed because libs reference
+          # each other at runtime via relative paths CI cannot resolve.
+          # shellcheck disable=SC2086
+          shellcheck -x -e SC1091 $files
+
+  doctor-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install zsh + jq + gh
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh jq gh
+
+      - name: Assert version-check.sh defines expected functions
+        run: |
+          set -euo pipefail
+          bash -c '
+            set -euo pipefail
+            # Library expects this when sourced from a non-bash context.
+            export _VERCHECK_LIB_DIR_OVERRIDE="$PWD/lib"
+            # shellcheck disable=SC1091
+            . lib/version-check.sh
+            for fn in _wb_versioncheck _wb_compare_semver _wb_local_version; do
+              if ! declare -F "$fn" >/dev/null; then
+                echo "FAIL: function $fn not defined after sourcing lib/version-check.sh" >&2
+                exit 1
+              fi
+              echo "OK: $fn"
+            done
+          '

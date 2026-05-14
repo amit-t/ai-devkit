@@ -53,6 +53,12 @@ USAGE
   esac
 done
 
+check_wsl_mnt_path() {
+  if [[ "$PWD" == /mnt/* ]]; then
+    print -ru2 -- "WARNING: doctor running from /mnt/ (DrvFs). Clone repos under \$HOME instead, DrvFs is ~10x slower and breaks fsync semantics."
+  fi
+}
+
 _detect_wb_root() {
   local d="${PWD:A}"
   while [[ -n "$d" && "$d" != "/" && "$d" != "$HOME" ]]; do
@@ -70,6 +76,8 @@ WB_ROOT=""
 if WB_ROOT="$(_detect_wb_root 2>/dev/null)" && [[ -n "$WB_ROOT" ]]; then
   is_stamped_wb=true
 fi
+
+check_wsl_mnt_path
 
 fetch_tool_state() {
   local tool="$1"

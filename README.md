@@ -136,6 +136,28 @@ See `docs/versioning.md` for the full system. First-time setup: `ROLLOUT-VERSION
 
 ---
 
+## Running on WSL2
+
+WSL2 Ubuntu is a supported environment. Install the minimum prereqs:
+
+```bash
+sudo apt install -y zsh jq gh git curl
+```
+
+Clone repos under `$HOME` (not under `/mnt/c/` or any other DrvFs mount). DrvFs paths are roughly 10x slower than the WSL2 ext4 filesystem and they break fsync semantics that ralph and git rely on. The [`devkit-doctor`](devkit-doctor/devkit-doctor.zsh) preflight will warn (`check_wsl_mnt_path`) if you run `devkit doctor` from a `/mnt/` path.
+
+The installer accepts a non-interactive mode (used by CI in `.github/workflows/smoke-install.yml`):
+
+```bash
+DEVKIT_NONINTERACTIVE=1 zsh install.zsh
+# or
+zsh install.zsh --yes
+```
+
+In non-interactive mode any prompt accepts the safe default (org slug falls back to `$DEVKIT_DEFAULT_ORG` or the current git remote owner, optional installs default to yes). Interactive TTY behaviour without the flag or env var is unchanged.
+
+---
+
 ## Related
 
 Part of the [ai-workbench](https://github.com/amit-t/ai-workbench) ecosystem.
