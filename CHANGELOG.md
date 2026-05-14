@@ -2,6 +2,13 @@
 
 All notable changes to ai-devkit are documented here. release-please appends entries on every merge to `main` based on Conventional Commit messages.
 
+## [1.2.1](https://github.com/amit-t/ai-devkit/compare/v1.2.0...v1.2.1) (2026-05-14)
+
+
+### Bug Fixes
+
+* **install:** two install/upgrade bugs that brick wb.upgrade on macOS ([#17](https://github.com/amit-t/ai-devkit/issues/17)) ([8b6ee77](https://github.com/amit-t/ai-devkit/commit/8b6ee7704d1400bdfe95fb634233f77bbc7a62fb))
+
 ## [1.2.0](https://github.com/amit-t/ai-devkit/compare/v1.1.0...v1.2.0) (2026-05-14)
 
 
