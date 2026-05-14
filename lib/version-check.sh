@@ -1,5 +1,6 @@
 # version-check.sh — bash-portable shared library for upgrade-notification.
 # Sourced from zsh today; body must remain bash-compatible (no zsh-only syntax).
+# shellcheck shell=bash
 
 if [[ -n "${BASH_SOURCE[0]:-}" ]]; then
   _VERCHECK_LIB_DIR="${BASH_SOURCE[0]%/*}"

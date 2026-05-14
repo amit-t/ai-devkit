@@ -5,6 +5,9 @@ ver="${2:-1.4.0}"
 git init --bare -q "$out"
 git -C "$out" symbolic-ref HEAD refs/heads/main
 work="$(mktemp -d)"
+# Intentionally expand $work now, so the trap cleans the directory created
+# above even if $work gets reassigned later.
+# shellcheck disable=SC2064
 trap "rm -rf '$work'" EXIT
 git -C "$work" init -q -b main
 printf '{"version":"%s","released":"2026-05-09","check_ttl_hours":12,"channel":"stable","requires":{},"changelog_url":"https://example.com"}\n' "$ver" > "$work/version.json"

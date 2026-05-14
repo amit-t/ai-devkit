@@ -1,0 +1,58 @@
+name: smoke-install
+
+on:
+  push:
+  pull_request:
+
+# Least-privilege GITHUB_TOKEN. The job only checks out the repo and runs
+# the installer + doctor; no writes required.
+permissions:
+  contents: read
+
+jobs:
+  fresh-install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install minimum prereqs (zsh jq gh git curl)
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y zsh jq gh git curl
+
+      - name: Checkout into fresh subdir (simulate clone)
+        uses: actions/checkout@v4
+        with:
+          path: devkit-fresh
+
+      - name: Run installer non-interactively
+        env:
+          DEVKIT_NONINTERACTIVE: "1"
+          DEVKIT_DEFAULT_ORG: "amit-t"
+        run: |
+          set -euo pipefail
+          # Installer writes to $HOME/.local/bin and $HOME/.zprofile.
+          # The runner's $HOME is writable; no extra setup needed.
+          zsh devkit-fresh/install.zsh
+
+      - name: Source devkit env + run doctor
+        run: |
+          set -euo pipefail
+          # ~/.zprofile may have been written by the installer.
+          # Source it so DEVKIT_CLONE is in scope, then exec the doctor shim.
+          zsh -c '
+            set -euo pipefail
+            [[ -f "$HOME/.zprofile" ]] && source "$HOME/.zprofile"
+            export PATH="$HOME/.local/bin:$PATH"
+            devkit doctor --check-only || true
+          '
+
+      - name: Run devkit upgrade --check-only (tolerant)
+        run: |
+          set -euo pipefail
+          zsh -c '
+            set -euo pipefail
+            [[ -f "$HOME/.zprofile" ]] && source "$HOME/.zprofile"
+            export PATH="$HOME/.local/bin:$PATH"
+            # check-only exits 1 when stale; smoke tolerates either outcome.
+            devkit upgrade --check-only || true
+          '
