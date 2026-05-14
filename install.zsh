@@ -138,7 +138,13 @@ add_alias "alias join.wb.dev='$SCRIPT_DIR/join-workbench/join.zsh --agent devin'
 add_alias "alias join.wb.cly='$SCRIPT_DIR/join-workbench/join.zsh --agent claude'"  "alias join.wb.cly="
 
 # ── update.wb (deprecated; forwards to wb.upgrade) ─────────────────────────
+# Earlier install.zsh versions installed update.wb as a symlink to
+# update-workbench/update.zsh. A plain `cat > "$DEPRECATED_SHIM"` follows that
+# symlink and overwrites the *real* update.zsh in the clone — corrupting the
+# tree on every re-install. `rm -f` breaks the symlink first so we always
+# write a fresh regular file.
 DEPRECATED_SHIM="$BIN_DIR/update.wb"
+rm -f "$DEPRECATED_SHIM"
 cat > "$DEPRECATED_SHIM" <<SH
 #!/usr/bin/env zsh
 print -u2 -r -- "[deprecated] use 'wb.upgrade'. Forwarding..."
