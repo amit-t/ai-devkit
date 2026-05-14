@@ -1,4 +1,5 @@
 # bootstrap-detection.sh — first-time-encounter nag for the versioning system.
+# shellcheck shell=bash
 
 _wb_bootstrap_flag_path() {
   local tool="$1"

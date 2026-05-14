@@ -3,6 +3,11 @@
 .tmp/
 *.local.*
 
+# install.zsh creates these as engine-internal skill-symlink mirrors of
+# skills/repo-context-scan. Symlinks contain absolute paths; never commit.
+/.claude/
+/.agents/
+
 # Jekyll docs site
 docs/_site/
 docs/_site_local/

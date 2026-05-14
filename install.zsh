@@ -2,9 +2,40 @@
 # install.zsh — Install ai-devkit commands globally.
 #   init.wb / join.wb / update.wb (+ .dev / .cly variants)
 #
-# Usage: ./install.zsh
+# Usage: ./install.zsh [--yes|-y|--non-interactive]
+#
+# Non-interactive mode:
+#   Set env DEVKIT_NONINTERACTIVE=1, or pass --yes / -y / --non-interactive.
+#   In non-interactive mode any future prompt accepts the safe default:
+#     - org slug = $DEVKIT_DEFAULT_ORG (or the current git remote owner)
+#     - "install ralph?" = yes
+#     - "install devkit aliases?" = yes
+#   Interactive TTY behaviour with neither flag/env set is unchanged.
+#   The CI smoke workflow (.github/workflows/smoke-install.yml) drives the
+#   non-interactive path. The script today has no prompts but new prompts
+#   added later must consult DEVKIT_NONINTERACTIVE before reading stdin.
 
 set -euo pipefail
+
+# ── Flag parsing (non-interactive support) ──────────────────────────────────
+DEVKIT_NONINTERACTIVE="${DEVKIT_NONINTERACTIVE:-0}"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --yes|-y|--non-interactive)
+      DEVKIT_NONINTERACTIVE=1
+      shift
+      ;;
+    -h|--help)
+      sed -n '2,16p' "$0"
+      exit 0
+      ;;
+    *)
+      print -u2 -r -- "Unknown flag: $1"
+      exit 2
+      ;;
+  esac
+done
+export DEVKIT_NONINTERACTIVE
 
 SCRIPT_DIR="${0:A:h}"
 BIN_DIR="${HOME}/.local/bin"
@@ -38,6 +69,44 @@ if ! grep -qF "$DEVKIT_LINE" "$ZPROFILE" 2>/dev/null; then
   printf "%s\n" "$DEVKIT_LINE" >> "$ZPROFILE"
   ok "wrote DEVKIT_CLONE to $ZPROFILE"
 fi
+
+# ── DEVKIT_DEFAULT_ENGINE in .zprofile ─────────────────────────────────────
+# Prefer devin if it's on PATH (Q9 locked decision), else claude.
+DEFAULT_ENGINE="claude"
+(( $+commands[devin] )) && DEFAULT_ENGINE="devin"
+ENGINE_LINE="export DEVKIT_DEFAULT_ENGINE=\"$DEFAULT_ENGINE\""
+if ! grep -qF "$ENGINE_LINE" "$ZPROFILE" 2>/dev/null; then
+  # Strip any prior DEVKIT_DEFAULT_ENGINE assignment so the value
+  # doesn't stack stale lines in ~/.zprofile.
+  if [[ -f "$ZPROFILE" ]] && grep -q '^export DEVKIT_DEFAULT_ENGINE=' "$ZPROFILE"; then
+    tmp_zp="$(mktemp)"
+    grep -v '^export DEVKIT_DEFAULT_ENGINE=' "$ZPROFILE" > "$tmp_zp"
+    mv "$tmp_zp" "$ZPROFILE"
+  fi
+  if ! grep -q "EXTERNAL PROJECT ALIASES" "$ZPROFILE" 2>/dev/null; then
+    printf "\n# === EXTERNAL PROJECT ALIASES ===\n" >> "$ZPROFILE"
+  fi
+  printf "%s\n" "$ENGINE_LINE" >> "$ZPROFILE"
+  ok "wrote DEVKIT_DEFAULT_ENGINE=$DEFAULT_ENGINE to $ZPROFILE"
+fi
+
+# ── Skill symlinks (multi-engine) ──────────────────────────────────────────
+# Vendored skill source lives in the devkit clone. We expose it to each
+# supported engine's skills dir via idempotent symlinks (Q3 locked decision).
+SKILL_SRC="${SCRIPT_DIR}/skills/repo-context-scan"
+for engine_dir in "$HOME/.claude/skills" "$HOME/.devin/skills" "$HOME/.agents/skills"; do
+  mkdir -p "$engine_dir"
+  ln -sfn "$SKILL_SRC" "$engine_dir/repo-context-scan"
+  ok "linked: $engine_dir/repo-context-scan -> $SKILL_SRC"
+done
+
+# Devkit-internal exposure: mirror the same skill under the devkit clone so
+# engine-aware tooling can find it relative to DEVKIT_CLONE too.
+for internal_dir in "${SCRIPT_DIR}/.claude/skills" "${SCRIPT_DIR}/.agents/skills"; do
+  mkdir -p "$internal_dir"
+  ln -sfn "$SKILL_SRC" "$internal_dir/repo-context-scan"
+  ok "linked: $internal_dir/repo-context-scan -> $SKILL_SRC"
+done
 
 install_cmd() {
   local name="$1" target="$2"
@@ -98,9 +167,14 @@ case "\$1" in
     shift
     exec "$SCRIPT_DIR/devkit-doctor/devkit-doctor.zsh" "\$@"
     ;;
+  upgrade)
+    shift
+    exec "$SCRIPT_DIR/devkit-upgrade/devkit-upgrade.zsh" "\$@"
+    ;;
   *)
     print -u2 -r -- "Unknown subcommand: \$1"
     print -u2 -r -- "Usage: devkit doctor [--check-only|--fix]"
+    print -u2 -r -- "       devkit upgrade [--check-only|--yes|--rollback]"
     exit 1
     ;;
 esac

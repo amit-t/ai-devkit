@@ -92,6 +92,27 @@ Output:
   join.wb https://github.com/<org>/wb-example
 ```
 
+## After init: explore context/
+
+After `init.wb` finishes, your new workbench has a `context/` directory
+with one `CONTEXT.md` per registered source repo, plus an aggregate
+`context/README.md` index.
+
+These files are devkit-generated domain summaries — they help agents
+(and you) understand each repo at a glance without grepping the source.
+Open them with your editor or skim the index:
+
+```bash
+cat context/README.md
+cat context/<repo>/CONTEXT.md
+```
+
+A scan can fail (no HEAD in source, LLM crash, lock contention, etc.) —
+failed scans leave a stub with `status: scan-failed` in the
+frontmatter. Re-run with `wb.rescan <repo>` (or `wb.rescan --all`). See
+[Repo Context Scan]({{ '/repo-context-scan.html' | relative_url }}) for
+the full feature reference.
+
 ## Joining Someone Else's Workbench
 
 ```bash
@@ -105,6 +126,7 @@ Preflight runs, you get appended to CODEOWNERS, any extra repos you bring get re
 
 - [Commands]({{ '/commands.html' | relative_url }}) — full CLI reference
 - [Versioning + upgrades]({{ '/versioning.html' | relative_url }}): `devkit.upgrade`, `ralph.upgrade`, `wb.upgrade`, `devkit doctor`
+- [Repo Context Scan]({{ '/repo-context-scan.html' | relative_url }}) — auto-built per-repo CONTEXT.md and `wb.rescan` recovery
 - [Orgs]({{ '/orgs.html' | relative_url }}) — machine-local GitHub org list
 - [ai-workbench docs]({{ links.ai_workbench_pages }}) — what lives inside the workbench template
 - [ai-ralph README]({{ links.ai_ralph_repo }}) — autonomous loop engines
