@@ -2,6 +2,13 @@
 
 All notable changes to ai-devkit are documented here. release-please appends entries on every merge to `main` based on Conventional Commit messages.
 
+## [1.2.0](https://github.com/amit-t/ai-devkit/compare/v1.1.0...v1.2.0) (2026-05-14)
+
+
+### Features
+
+* WSL2 Ubuntu support (Wave 1) ([02874cd](https://github.com/amit-t/ai-devkit/commit/02874cd5e3621329ff9c1b49be202a75ce387646))
+
 ## [1.1.0](https://github.com/amit-t/ai-devkit/compare/v1.0.0...v1.1.0) (2026-05-13)
 
 
