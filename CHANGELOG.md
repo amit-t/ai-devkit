@@ -2,6 +2,13 @@
 
 All notable changes to ai-devkit are documented here. release-please appends entries on every merge to `main` based on Conventional Commit messages.
 
+## [1.2.2](https://github.com/amit-t/ai-devkit/compare/v1.2.1...v1.2.2) (2026-05-14)
+
+
+### Bug Fixes
+
+* **scan:** aggregate failed on CONTEXT.md without **bold** concepts ([#19](https://github.com/amit-t/ai-devkit/issues/19)) ([03e0e49](https://github.com/amit-t/ai-devkit/commit/03e0e49d2b87431fd9d34b334c5319b7dc716f1d))
+
 ## [1.2.1](https://github.com/amit-t/ai-devkit/compare/v1.2.0...v1.2.1) (2026-05-14)
 
 
