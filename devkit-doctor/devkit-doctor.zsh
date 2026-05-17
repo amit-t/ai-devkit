@@ -422,6 +422,43 @@ if $is_stamped_wb; then
   fi
   render_check "aggregate README current" "$wb4_status" "$wb4_detail"
 
+  # WB-Check 5a — RALPH_EXECUTION_ENGINE present in project.conf
+  # WARN-only. Companion to ai-workbench PR feat/dispatch-engine-routing
+  # (plan/exec engine split). wb.upgrade migrates this; suggest the user
+  # run it. No auto-fix.
+  wb5a_status=""
+  wb5a_detail=""
+  if [[ -f "${WB_ROOT}/project.conf" ]]; then
+    if grep -q '^RALPH_EXECUTION_ENGINE=' "${WB_ROOT}/project.conf" 2>/dev/null; then
+      wb5a_status="OK"
+      wb5a_detail="present"
+    else
+      wb5a_status="WARN"
+      wb5a_detail="absent; run wb.upgrade to migrate"
+      wb_warn_messages+=("RALPH_EXECUTION_ENGINE missing from project.conf — run: wb.upgrade")
+    fi
+  else
+    wb5a_status="WARN"
+    wb5a_detail="project.conf missing"
+  fi
+  render_check "RALPH_EXECUTION_ENGINE set" "$wb5a_status" "$wb5a_detail"
+
+  # WB-Check 5b — no stale wb-root .ralph/ stub
+  # WARN-only. Companion to ai-workbench PR feat/stub-purge-stack (template
+  # _dev_only expanded to .ralph/**). wb.upgrade backs the stub up; suggest
+  # the user run it. No auto-fix.
+  wb5b_status=""
+  wb5b_detail=""
+  if [[ -d "${WB_ROOT}/.ralph" ]]; then
+    wb5b_status="WARN"
+    wb5b_detail="stale wb-root .ralph/ stub; run wb.upgrade"
+    wb_warn_messages+=("Stale .ralph/ at wb root (confuses ralph is_ralph_enabled) — run: wb.upgrade")
+  else
+    wb5b_status="OK"
+    wb5b_detail="absent"
+  fi
+  render_check "no wb-root .ralph/ stub" "$wb5b_status" "$wb5b_detail"
+
   # WB-Check 5 — .context-scan/ worktree clean
   wb5_status=""
   wb5_detail=""
