@@ -311,23 +311,39 @@ git clone "${url}" "${WB_DIR}/repos/${name}"
 
 ### 3.4a — Purge template-dev-only artifacts
 
-The `ai-workbench` template repo carries some files for its own template-development loop that must NOT travel into stamped wbs. The list lives in `.workbench-manifest.json` under `template_dev_only`. Read it and remove each entry:
+The `ai-workbench` template repo carries some files for its own template-development loop that must NOT travel into stamped wbs. The list lives in `.workbench-manifest.json` under `template_dev_only`. Two entry shapes are supported:
+
+- **Regular file path** (e.g., `SESSION-HANDOFF.md`) — `rm -f` the file.
+- **Glob / whole-directory** ending in `/**` (e.g., `.ralph/**`) — `rm -rf` the directory portion (everything before `/**`). This is how the template's own ralph workspace (`.ralph/` with its template-dev `AGENT.md`, `fix_plan.md`, `PROMPT.md`) is purged from stamped wbs.
+
+Read the manifest and remove each entry, logging every removal with a `[purge] <path>` line:
 
 ```bash
 cd "${WB_DIR}"
 python3 - <<'PYEOF'
-import json, pathlib
+import json, pathlib, shutil
 manifest = json.loads(pathlib.Path(".workbench-manifest.json").read_text())
 for rel in manifest.get("template_dev_only", []):
+    # Glob / whole-directory entry: `<dir>/**` → rm -rf <dir>
+    if rel.endswith("/**"):
+        target = pathlib.Path(rel[:-3])
+        if target.exists() and target.is_dir():
+            shutil.rmtree(target)
+            print(f"[purge] {rel} -> rm -rf {target}")
+        continue
+    # Regular file or directory path: rm -f file, or rm -rf directory.
     p = pathlib.Path(rel)
     if p.exists():
         if p.is_dir():
-            import shutil; shutil.rmtree(p)
+            shutil.rmtree(p)
+            print(f"[purge] {rel} (directory)")
         else:
             p.unlink()
-        print(f"purged template-dev artifact: {rel}")
+            print(f"[purge] {rel} (file)")
 PYEOF
 ```
+
+Note: the `.ralph/**` entry handled above purges the template's own ralph workspace at the wb root. The stamped wb's real ralph workspace lives at `${WB_DIR}/repos/.ralph/` and is created later in Step 3.4b via `ralph enable --workspace`.
 
 Do not commit yet; later steps add more changes that go in the same initial commit.
 

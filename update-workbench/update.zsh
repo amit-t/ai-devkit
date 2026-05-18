@@ -244,4 +244,50 @@ if [[ -d "${WB_DIR}/repos" ]]; then
   fi
 fi
 
+# ── RALPH_EXECUTION_ENGINE migration (idempotent) ───────────────────────────
+# Companion to ai-workbench PR feat/dispatch-engine-routing. Plan and execution
+# engines are now independent. Existing stamped wbs only carry RALPH_PLAN_ENGINE;
+# append RALPH_EXECUTION_ENGINE with the same value so behavior is preserved
+# (Option C migration). Users can then flip exec independently — e.g., plan
+# with claude for a richer fix_plan, execute with devin for cheap parallel
+# workers in workspace mode, or mix engines (plan with one, exec with another).
+# Skip when the key is already present.
+if [[ -f "${WB_DIR}/project.conf" ]]; then
+  if ! grep -q '^RALPH_EXECUTION_ENGINE=' "${WB_DIR}/project.conf"; then
+    local _plan_engine
+    # `|| true` guards against `set -e` aborting when RALPH_PLAN_ENGINE is
+    # absent (grep exits 1). Default below.
+    _plan_engine="$(grep '^RALPH_PLAN_ENGINE=' "${WB_DIR}/project.conf" 2>/dev/null \
+                      | head -1 \
+                      | sed -E 's/^RALPH_PLAN_ENGINE="?([^"]*)"?.*/\1/' || true)"
+    [[ -z "$_plan_engine" ]] && _plan_engine="devin"
+    cat >> "${WB_DIR}/project.conf" <<EOF
+
+# Added by wb.upgrade $(date -u +%Y-%m-%dT%H:%M:%SZ)
+# Execution engine for wb.ralph-dispatch (loop / execute phase). Initially set
+# to match RALPH_PLAN_ENGINE so behavior is preserved; flip to "devin" for cheap
+# parallel workers in workspace mode, or mix engines (plan with one, exec with
+# another). Valid values: claude | devin | codex.
+RALPH_EXECUTION_ENGINE="$_plan_engine"
+EOF
+    print -r -- "wb.upgrade: added RALPH_EXECUTION_ENGINE=$_plan_engine to project.conf (matched existing RALPH_PLAN_ENGINE; flip independently to mix engines)"
+  fi
+fi
+
+# ── Stub .ralph/ purge (idempotent) ─────────────────────────────────────────
+# Companion to ai-workbench PR feat/stub-purge-stack. The new
+# .workbench-manifest.json template_dev_only entry is `.ralph/**`, so fresh
+# stamps drop the whole template-dev .ralph/ at init.wb time. Existing stamped
+# wbs (init.wb pre-update) may still carry the stub at the workbench root,
+# which confuses ai-ralph's is_ralph_enabled check. Move-to-backup (no
+# rm -rf) so any user state can be recovered. The real workspace lives at
+# ${WB_DIR}/repos/.ralph/ and is untouched.
+if [[ -f "${WB_DIR}/project.conf" && -d "${WB_DIR}/.ralph" ]]; then
+  local _ts _backup
+  _ts="$(date +%s)"
+  _backup="${WB_DIR}/.ralph.purged.${_ts}"
+  mv "${WB_DIR}/.ralph" "$_backup"
+  print -r -- "wb.upgrade: removed stale wb-root .ralph stub; backed up to $_backup (workspace at \${WB_DIR}/repos/.ralph/ unchanged)"
+fi
+
 _print_steering_drift_nag "$WB_DIR" "$UPSTREAM_URL"

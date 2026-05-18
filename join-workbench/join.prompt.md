@@ -254,6 +254,19 @@ mkdir -p "${WB_DIR}/repos"
 }
 ```
 
+Defensive stub-`.ralph/` heal: if the joiner cloned a wb stamped before the `.ralph/**` template_dev_only purge (ai-workbench PR feat/stub-purge-stack), a stale wb-root `.ralph/` may be present and would confuse `ai-ralph`'s `is_ralph_enabled` check (which expects the workspace at `${WB_DIR}/repos/.ralph/`, not the wb root). Back it up rather than `rm -rf` so any user state is recoverable. Idempotent (skips when no stub is present):
+
+```bash
+if [[ -d "${WB_DIR}/.ralph" ]]; then
+  ts="$(date +%s)"
+  backup="${WB_DIR}/.ralph.purged.${ts}"
+  mv "${WB_DIR}/.ralph" "$backup"
+  echo "[purge] stale wb-root .ralph/ stub backed up to $backup (workspace at \${WB_DIR}/repos/.ralph/ unchanged)"
+fi
+```
+
+The same heal also runs in `wb.upgrade`, so this is a defence-in-depth check for the common case where a joiner clones an older wb.
+
 ---
 
 ## Step 5 — Append to project.conf
