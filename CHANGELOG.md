@@ -2,6 +2,13 @@
 
 All notable changes to ai-devkit are documented here. release-please appends entries on every merge to `main` based on Conventional Commit messages.
 
+## [1.3.1](https://github.com/amit-t/ai-devkit/compare/v1.3.0...v1.3.1) (2026-05-19)
+
+
+### Bug Fixes
+
+* **version-check:** recover devkit clone when DEVKIT_CLONE env unset ([#17](https://github.com/amit-t/ai-devkit/issues/17)) ([02bd1bf](https://github.com/amit-t/ai-devkit/commit/02bd1bf885bc022af8cfd9007de256649936f444))
+
 ## [1.3.0](https://github.com/amit-t/ai-devkit/compare/v1.2.2...v1.3.0) (2026-05-18)
 
 
