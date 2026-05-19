@@ -52,6 +52,15 @@ cp "$SCRIPT_DIR/lib/bootstrap-detection.sh"  "$SHARE_DIR/"
 chmod 0644 "$SHARE_DIR/version-check.sh" "$SHARE_DIR/bootstrap-detection.sh"
 ok "installed lib: $SHARE_DIR/version-check.sh"
 
+# Persist clone path so devkit-doctor / devkit-upgrade can recover the
+# local version even from shells that have not sourced ~/.zprofile (issue
+# #17). The env var in ~/.zprofile remains the canonical source; this
+# file is a cross-session fallback that ships with the install itself.
+DEVKIT_CLONE_STATE="$SHARE_DIR/devkit-clone.path"
+printf '%s\n' "$SCRIPT_DIR" > "$DEVKIT_CLONE_STATE"
+chmod 0644 "$DEVKIT_CLONE_STATE"
+ok "persisted clone path: $DEVKIT_CLONE_STATE"
+
 # ── DEVKIT_CLONE in .zprofile ──────────────────────────────────────────────
 ZPROFILE="${HOME}/.zprofile"
 DEVKIT_LINE="export DEVKIT_CLONE=\"$SCRIPT_DIR\""
