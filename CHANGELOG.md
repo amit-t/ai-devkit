@@ -2,6 +2,14 @@
 
 All notable changes to ai-devkit are documented here. release-please appends entries on every merge to `main` based on Conventional Commit messages.
 
+## [1.3.0](https://github.com/amit-t/ai-devkit/compare/v1.2.2...v1.3.0) (2026-05-18)
+
+
+### Features
+
+* **update,init,join,doctor:** wb.upgrade migrates RALPH_EXECUTION_ENGINE + purges .ralph stub ([293295c](https://github.com/amit-t/ai-devkit/commit/293295c6adc474cd2dfdb6af7914b1a2a12d1102))
+* **update,init,join:** wb.upgrade migrates RALPH_EXECUTION_ENGINE + purges .ralph stub ([9db9a66](https://github.com/amit-t/ai-devkit/commit/9db9a66cebaf2bd986fb68d00077a4c6be385beb))
+
 ## [1.2.2](https://github.com/amit-t/ai-devkit/compare/v1.2.1...v1.2.2) (2026-05-14)
 
 
