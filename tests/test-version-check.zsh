@@ -289,4 +289,110 @@ test_versioncheck_fires_bootstrap_nag_when_local_is_zero() {
 
 test_versioncheck_fires_bootstrap_nag_when_local_is_zero
 
+# ── Issue #17: clone discoverable without DEVKIT_CLONE env ────────────────
+# Symptom: user runs `devkit upgrade` / `devkit doctor` in a shell that has
+# never sourced ~/.zprofile. Env var DEVKIT_CLONE is unset, so the tool
+# reports local version 0.0.0 even though version.json exists in the clone.
+# Fix: persist clone path at install time + symlink-resolve fallback.
+
+test_clone_path_devkit_state_file_fallback() {
+  local state_dir fake_clone result
+  state_dir="$(mktemp -d)"
+  fake_clone="$(mktemp -d)"
+  trap "rm -rf '$state_dir' '$fake_clone'" EXIT
+  printf '%s\n' "$fake_clone" > "$state_dir/devkit-clone.path"
+  result="$(DEVKIT_CLONE= WB_STATE_DIR="$state_dir" _wb_clone_path devkit)"
+  assert_eq "$result" "$fake_clone" "state file wins when env empty"
+}
+
+test_clone_path_ralph_state_file_fallback() {
+  local state_dir fake_clone result
+  state_dir="$(mktemp -d)"
+  fake_clone="$(mktemp -d)"
+  trap "rm -rf '$state_dir' '$fake_clone'" EXIT
+  printf '%s\n' "$fake_clone" > "$state_dir/ralph-clone.path"
+  result="$(RALPH_CLONE= WB_STATE_DIR="$state_dir" _wb_clone_path ralph)"
+  assert_eq "$result" "$fake_clone" "state file wins when env empty (ralph)"
+}
+
+test_clone_path_env_beats_state_file() {
+  local state_dir state_clone env_clone result
+  state_dir="$(mktemp -d)"
+  state_clone="$(mktemp -d)"
+  env_clone="$(mktemp -d)"
+  trap "rm -rf '$state_dir' '$state_clone' '$env_clone'" EXIT
+  printf '%s\n' "$state_clone" > "$state_dir/devkit-clone.path"
+  result="$(DEVKIT_CLONE="$env_clone" WB_STATE_DIR="$state_dir" _wb_clone_path devkit)"
+  assert_eq "$result" "$env_clone" "env always wins over state file"
+}
+
+test_clone_path_state_file_ignored_when_path_missing() {
+  local state_dir result stale
+  state_dir="$(mktemp -d)"
+  trap "rm -rf '$state_dir'" EXIT
+  stale="/nonexistent/path/that/does/not/exist"
+  printf '%s\n' "$stale" > "$state_dir/devkit-clone.path"
+  # Empty PATH so symlink-resolve fallback can't find a live install either.
+  result="$(DEVKIT_CLONE= WB_STATE_DIR="$state_dir" WB_DISABLE_DISCOVERY=1 _wb_clone_path devkit)"
+  assert_eq "$result" "" "stale state path discarded (with discovery disabled)"
+}
+
+test_local_version_via_state_file_when_env_unset() {
+  # Reproduces issue #17 exactly: env var unset, install.zsh wrote state file,
+  # version.json present in clone — expect real version, not 0.0.0.
+  local state_dir fake_clone result
+  state_dir="$(mktemp -d)"
+  fake_clone="$(mktemp -d)"
+  trap "rm -rf '$state_dir' '$fake_clone'" EXIT
+  printf '{"version":"1.2.2"}\n' > "$fake_clone/version.json"
+  printf '%s\n' "$fake_clone" > "$state_dir/devkit-clone.path"
+  result="$(DEVKIT_CLONE= WB_STATE_DIR="$state_dir" _wb_local_version devkit)"
+  assert_eq "$result" "1.2.2" "version recovered without DEVKIT_CLONE env"
+}
+
+test_clone_path_devkit_symlink_discovery() {
+  # Simulate install.zsh's symlink layout: ~/.local/bin/devkit.upgrade ->
+  # <clone>/devkit-upgrade/devkit-upgrade.zsh. No state file, no env var,
+  # discovery must still find the clone by walking up from the symlink.
+  local fake_clone bin_dir state_dir result
+  fake_clone="$(mktemp -d)"
+  bin_dir="$(mktemp -d)"
+  state_dir="$(mktemp -d)"
+  trap "rm -rf '$fake_clone' '$bin_dir' '$state_dir'" EXIT
+  mkdir -p "$fake_clone/devkit-upgrade"
+  printf '#!/usr/bin/env zsh\n' > "$fake_clone/devkit-upgrade/devkit-upgrade.zsh"
+  chmod +x "$fake_clone/devkit-upgrade/devkit-upgrade.zsh"
+  printf '{"version":"1.5.0"}\n' > "$fake_clone/version.json"
+  ln -s "$fake_clone/devkit-upgrade/devkit-upgrade.zsh" "$bin_dir/devkit.upgrade"
+  result="$(DEVKIT_CLONE= WB_STATE_DIR="$state_dir" PATH="$bin_dir:/usr/bin:/bin" _wb_clone_path devkit)"
+  # macOS mktemp paths land under /var/folders -> /private/var/folders.
+  # realpath canonicalises the symlink, so compare canonicalised forms.
+  local canonical
+  canonical="$(cd "$fake_clone" && pwd -P)"
+  assert_eq "$result" "$canonical" "discovery walks symlink up to version.json"
+}
+
+test_local_version_e2e_issue_17() {
+  # Reproduces issue #17 end-to-end: simulate install.zsh side-effect
+  # (writes clone-path file), then ensure _wb_local_version returns the
+  # right version with DEVKIT_CLONE unset — covering the exact path
+  # devkit-doctor and devkit-upgrade take when ~/.zprofile is not sourced.
+  local state_dir fake_clone result
+  state_dir="$(mktemp -d)"
+  fake_clone="$(mktemp -d)"
+  trap "rm -rf '$state_dir' '$fake_clone'" EXIT
+  printf '{"version":"1.2.2"}\n' > "$fake_clone/version.json"
+  printf '%s\n' "$fake_clone" > "$state_dir/devkit-clone.path"
+  result="$(DEVKIT_CLONE= WB_STATE_DIR="$state_dir" WB_DISABLE_DISCOVERY=1 _wb_local_version devkit)"
+  assert_eq "$result" "1.2.2" "issue #17: local version recovered without env"
+}
+
+test_clone_path_devkit_state_file_fallback
+test_clone_path_ralph_state_file_fallback
+test_clone_path_env_beats_state_file
+test_clone_path_state_file_ignored_when_path_missing
+test_local_version_via_state_file_when_env_unset
+test_clone_path_devkit_symlink_discovery
+test_local_version_e2e_issue_17
+
 print -r -- "PASS: test-version-check.zsh (semver compare)"
