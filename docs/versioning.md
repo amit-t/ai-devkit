@@ -113,6 +113,13 @@ relocation-safe), installs the new aliases (`devkit.upgrade`,
 `ralph.upgrade`, `wb.upgrade`, `devkit doctor`), and seeds the cache.
 `exec zsh` reloads the shell so the new aliases are on PATH.
 
+`install.zsh` also persists the clone path to
+`~/.local/share/wb-versioncheck/devkit-clone.path`. `devkit doctor` and
+`devkit.upgrade` read this file when `DEVKIT_CLONE` is unset — for
+example, when the current shell has not yet sourced `~/.zprofile`
+(issue #17). The environment variable remains the canonical source; the
+state file is a cross-session fallback.
+
 The first run of any tool after bootstrap may print a one-time
 "bootstrap nag" if no `version.json` is detected locally. Run the
 upgrade once and the nag goes away.

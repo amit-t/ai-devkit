@@ -46,16 +46,122 @@ _wb_check_requires() {
   esac
 }
 
+_wb_state_dir() {
+  # Stable, install-rooted location used for cross-shell state that must
+  # survive sessions where ~/.zprofile has not been re-sourced. Tests
+  # override via WB_STATE_DIR.
+  echo "${WB_STATE_DIR:-${HOME}/.local/share/wb-versioncheck}"
+}
+
+# Best-effort symlink resolver. macOS readlink lacks -f; realpath may be
+# missing; fall back to manual walk. Always emits an absolute path on
+# success; returns 1 if the link cannot be resolved.
+_wb_resolve_link() {
+  local link="$1"
+  [[ -z "$link" ]] && return 1
+  local resolved
+  if command -v realpath >/dev/null 2>&1; then
+    if resolved="$(realpath "$link" 2>/dev/null)" && [[ -n "$resolved" ]]; then
+      echo "$resolved"
+      return 0
+    fi
+  fi
+  if resolved="$(readlink -f "$link" 2>/dev/null)" && [[ -n "$resolved" ]]; then
+    echo "$resolved"
+    return 0
+  fi
+  local cur="$link" count=0 target dir
+  while [[ -L "$cur" ]]; do
+    count=$(( count + 1 ))
+    (( count > 32 )) && return 1
+    target="$(readlink "$cur" 2>/dev/null)" || return 1
+    case "$target" in
+      /*) cur="$target" ;;
+      *)
+        dir="$(cd "$(dirname "$cur")" 2>/dev/null && pwd -P)" || return 1
+        cur="$dir/$target"
+        ;;
+    esac
+  done
+  echo "$cur"
+}
+
+# Walk up from a path looking for a directory containing version.json.
+# Stops at "/" or after a sanity cap. Echoes the matched dir; returns 1
+# if no version.json is found.
+_wb_find_version_root() {
+  local start="$1" cap="${2:-8}" d count=0
+  [[ -z "$start" ]] && return 1
+  d="$start"
+  while [[ -n "$d" && "$d" != "/" ]]; do
+    if [[ -f "$d/version.json" ]]; then
+      echo "$d"
+      return 0
+    fi
+    d="$(dirname "$d")"
+    count=$(( count + 1 ))
+    (( count > cap )) && return 1
+  done
+  return 1
+}
+
+# Discover a tool's clone by resolving the installed command symlink and
+# walking up to the version.json. Works for any layout where the installed
+# script lives inside the clone (which install.zsh guarantees for devkit
+# and ai-ralph's install.sh guarantees for ralph).
+_wb_discover_clone_via_symlink() {
+  local cmd="$1"
+  local link resolved root
+  link="$(command -v "$cmd" 2>/dev/null)" || return 1
+  [[ -n "$link" ]] || return 1
+  resolved="$(_wb_resolve_link "$link")" || return 1
+  [[ -n "$resolved" ]] || return 1
+  root="$(_wb_find_version_root "$(dirname "$resolved")")" || return 1
+  echo "$root"
+}
+
 _wb_clone_path() {
   local tool="$1"
-  local var
+  local var clone
   case "$tool" in
     devkit) var="DEVKIT_CLONE" ;;
     ralph)  var="RALPH_CLONE"  ;;
     wb)     echo ""; return ;;
     *)      echo ""; return ;;
   esac
-  eval "echo \"\${$var:-}\""
+  eval "clone=\"\${$var:-}\""
+  if [[ -n "$clone" ]]; then
+    echo "$clone"
+    return
+  fi
+  # Fallback 1 — state file persisted by install.zsh. Survives sessions
+  # where ~/.zprofile has not been re-sourced (issue #17 root cause).
+  local state_file stored
+  state_file="$(_wb_state_dir)/${tool}-clone.path"
+  if [[ -f "$state_file" ]]; then
+    stored="$(head -n 1 "$state_file" 2>/dev/null)"
+    if [[ -n "$stored" && -d "$stored" ]]; then
+      echo "$stored"
+      return
+    fi
+  fi
+  # Fallback 2 — resolve installed command symlink and locate version.json.
+  # Disabled by WB_DISABLE_DISCOVERY=1 (used by tests that need to assert
+  # the empty-fallback path deterministically).
+  if [[ "${WB_DISABLE_DISCOVERY:-0}" != "1" ]]; then
+    local discovered
+    case "$tool" in
+      devkit)
+        discovered="$(_wb_discover_clone_via_symlink devkit.upgrade 2>/dev/null)" \
+          && [[ -n "$discovered" ]] && { echo "$discovered"; return; }
+        ;;
+      ralph)
+        discovered="$(_wb_discover_clone_via_symlink ralph 2>/dev/null)" \
+          && [[ -n "$discovered" ]] && { echo "$discovered"; return; }
+        ;;
+    esac
+  fi
+  echo ""
 }
 
 _wb_local_version() {
