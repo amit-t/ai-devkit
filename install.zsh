@@ -1,6 +1,9 @@
 #!/usr/bin/env zsh
 # install.zsh — Install ai-devkit commands globally.
-#   init.wb / join.wb / update.wb (+ .dev / .cly variants)
+#   init.wb / join.wb / update.wb              (planning workbench)
+#   init.auto.wb / join.auto.wb / update.auto.wb  (test-automation workbench)
+#   orgs.wb                                     (shared org list)
+# All three forms also get .dev (force Devin) and .cly (force Claude) variants.
 #
 # Usage: ./install.zsh [--yes|-y|--non-interactive]
 #
@@ -197,6 +200,24 @@ SH
 chmod +x "$DOCTOR_SHIM"
 ok "installed: devkit (subcommand wrapper)"
 
+# ── init.auto.wb (test-automation workbench) ────────────────────────────────
+install_cmd "init.auto.wb"   "$SCRIPT_DIR/init-test-workbench/init.zsh"
+add_alias "alias init.auto.wb='$SCRIPT_DIR/init-test-workbench/init.zsh'"                 "alias init.auto.wb="
+add_alias "alias init.auto.wb.dev='$SCRIPT_DIR/init-test-workbench/init.zsh --agent devin'"   "alias init.auto.wb.dev="
+add_alias "alias init.auto.wb.cly='$SCRIPT_DIR/init-test-workbench/init.zsh --agent claude'"  "alias init.auto.wb.cly="
+
+# ── join.auto.wb ────────────────────────────────────────────────────────────
+install_cmd "join.auto.wb"   "$SCRIPT_DIR/join-test-workbench/join.zsh"
+add_alias "alias join.auto.wb='$SCRIPT_DIR/join-test-workbench/join.zsh'"                 "alias join.auto.wb="
+add_alias "alias join.auto.wb.dev='$SCRIPT_DIR/join-test-workbench/join.zsh --agent devin'"   "alias join.auto.wb.dev="
+add_alias "alias join.auto.wb.cly='$SCRIPT_DIR/join-test-workbench/join.zsh --agent claude'"  "alias join.auto.wb.cly="
+
+# ── update.auto.wb ──────────────────────────────────────────────────────────
+install_cmd "update.auto.wb" "$SCRIPT_DIR/update-test-workbench/update.zsh"
+add_alias "alias update.auto.wb='$SCRIPT_DIR/update-test-workbench/update.zsh'"                "alias update.auto.wb="
+add_alias "alias update.auto.wb.dev='$SCRIPT_DIR/update-test-workbench/update.zsh --agent devin'"  "alias update.auto.wb.dev="
+add_alias "alias update.auto.wb.cly='$SCRIPT_DIR/update-test-workbench/update.zsh --agent claude'" "alias update.auto.wb.cly="
+
 # ── orgs.wb ─────────────────────────────────────────────────────────────────
 install_cmd "orgs.wb"     "$SCRIPT_DIR/orgs-workbench/orgs.zsh"
 add_alias "alias orgs.wb='$SCRIPT_DIR/orgs-workbench/orgs.zsh'"        "alias orgs.wb="
@@ -208,12 +229,12 @@ if ! echo "$PATH" | tr ':' '\n' | grep -qx "$BIN_DIR"; then
 fi
 
 # ── Ralph probe ─────────────────────────────────────────────────────────────
-# init.wb / join.wb install ralph on demand. We just warn here so users see it
+# init.* / join.* install ralph on demand. We just warn here so users see it
 # now rather than later. Do NOT auto-install: ralph install touches ~/.ralph/
-# and should be a deliberate step the user sees during init.wb.
+# and should be a deliberate step the user sees during an init flow.
 if (( ! $+commands[ralph] )); then
   warn "ralph is not installed yet"
-  printf "   init.wb / join.wb will install it from ai-ralph at first run.\n"
+  printf "   init.wb / init.auto.wb / join.wb / join.auto.wb will install it from ai-ralph at first run.\n"
 elif ! ralph --help 2>&1 | grep -q -- '--workspace'; then
   warn "ralph is installed but does not support --workspace mode"
   printf "   Update ai-ralph and re-run its install.sh:\n"
