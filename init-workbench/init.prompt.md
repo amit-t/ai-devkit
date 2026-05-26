@@ -91,9 +91,16 @@ Any joiner running join.wb will be appended to the same CODEOWNERS line.
 
 ### 0d — Org selection (for ai-ralph source)
 
-Ask which GitHub org hosts `${RALPH_REPO_SLUG}` and the `${WORKBENCH_TEMPLATE_SLUG}` template.
+Ask which GitHub org hosts `${RALPH_REPO_SLUG}` and the `${WORKBENCH_TEMPLATE_SLUG}` template. NEVER assume the org. ALWAYS prompt, even if only one org is available.
 
-Build the menu dynamically from the devkit org list (configured + auto-detected from devkit's origin). Use the `orgs.wb` utility:
+Build the menu dynamically from the devkit org list, which merges three sources, in order:
+
+1. `gh api user/orgs` — every org the current gh user belongs to.
+2. `orgs.conf` — user-curated additions (orgs to pin even if gh discovery
+   does not surface them).
+3. The org that hosts this devkit checkout (auto-detected from origin).
+
+Use the `orgs.wb` utility:
 
 ```bash
 orgs.wb show
@@ -102,10 +109,14 @@ orgs.wb show
 That prints a numbered menu like:
 
 ```
-  [1] Invenco-Cloud-Systems-ICS
-  [2] <auto-detected-org-from-devkit-origin>
+  [1] <gh-org-1>                              (from gh api user/orgs)
+  [2] <gh-org-2>                              (from gh api user/orgs)
+  [3] <orgs.conf-entry>                       (from orgs.conf, if any)
+  [4] <auto-detected-org-from-devkit-origin>
   [N] Personal (enter your GitHub handle)
 ```
+
+Numbering is dynamic. If `gh` is missing or unauthenticated, the gh entries are silently omitted and the menu falls back to `orgs.conf` + auto-detected.
 
 The final "Personal" slot is always last. Selections `1..N-1` map directly to the printed org slug; selection `N` prompts "Enter personal GitHub handle (e.g. amit-t):" and sets `ORG="<handle>"`.
 

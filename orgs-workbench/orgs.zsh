@@ -3,11 +3,12 @@
 #
 # Usage:
 #   orgs.wb                  # same as `list`
-#   orgs.wb list             # print all orgs (configured + auto-detected)
+#   orgs.wb list             # print all orgs (gh + configured + auto-detected)
 #   orgs.wb show             # numbered menu (same format init/join use)
 #   orgs.wb add <slug>       # append slug to orgs.conf
 #   orgs.wb remove <slug>    # remove slug from orgs.conf
 #   orgs.wb auto             # print auto-detected org only
+#   orgs.wb gh               # print orgs from `gh api user/orgs` only
 #   orgs.wb path             # print path to orgs.conf
 #   orgs.wb edit             # open orgs.conf in $EDITOR
 
@@ -32,6 +33,7 @@ case "$cmd" in
   add)     devkit_orgs_add "${1:-}" ;;
   remove|rm) devkit_orgs_remove "${1:-}" ;;
   auto)    devkit_auto_org ;;
+  gh)      devkit_gh_orgs ;;
   path)    devkit_orgs_file ;;
   edit)    "${EDITOR:-vi}" "$(devkit_orgs_file)" ;;
   -h|--help|help)
@@ -39,15 +41,19 @@ case "$cmd" in
 orgs.wb — manage ai-devkit org list
 
 Commands:
-  list              Print all orgs (configured + auto-detected from devkit origin)
+  list              Print all orgs (gh-discovered + configured + auto-detected)
   show              Print numbered menu (as init.wb / join.wb present it)
-  add <slug>        Append a new org
-  remove <slug>     Remove an org
+  add <slug>        Append a new org to orgs.conf
+  remove <slug>     Remove an org from orgs.conf
   auto              Print the auto-detected org (from devkit's origin remote)
+  gh                Print orgs the current gh user is a member of
   path              Print path to orgs.conf
   edit              Open orgs.conf in \$EDITOR
 
-The org where this devkit checkout lives is always included, even if not listed.
+Org sources, in display order:
+  1. gh api user/orgs   (dynamic, primary)
+  2. orgs.conf          (user-curated additions)
+  3. devkit's origin    (auto-detected, always included)
 USAGE
     ;;
   *) echo "Unknown command: $cmd (try: orgs.wb --help)" >&2; exit 1 ;;

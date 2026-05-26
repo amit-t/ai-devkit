@@ -1,15 +1,25 @@
 #!/usr/bin/env bash
 # orgs.sh — Shared library for managing the devkit org list.
 #
-# Sources:
-#   1. orgs.conf  (user-editable, one slug per line, `#` comments OK)
-#   2. auto-detected org from devkit repo's origin remote (always included)
+# Sources, in display order:
+#   1. `gh api user/orgs`  — orgs the authenticated gh user belongs to.
+#                            Primary, dynamic source. Empty if gh missing or
+#                            not authenticated.
+#   2. orgs.conf           — user-editable additive overrides (orgs you want
+#                            to see even if gh discovery misses them, e.g.
+#                            collaborator-only repos in an org you are not
+#                            a member of yet).
+#   3. auto-detected org from devkit repo's origin remote (always included).
+#
+# All sources are deduped against each other; display order matches the
+# precedence above.
 #
 # Functions:
 #   devkit_orgs_file          — prints path to orgs.conf
 #   devkit_auto_org           — prints auto-detected org from devkit's origin
-#   devkit_orgs_list          — prints union (configured + auto), deduped,
-#                               file order preserved, auto appended if missing
+#   devkit_gh_orgs            — prints orgs from `gh api user/orgs` (silently
+#                               empty if gh missing or unauthed)
+#   devkit_orgs_list          — prints union (gh + configured + auto), deduped
 #   devkit_orgs_add <slug>    — append slug to orgs.conf if not already present
 #   devkit_orgs_remove <slug> — strip slug from orgs.conf
 #   devkit_orgs_show          — prints numbered menu (what init/join use)
@@ -36,11 +46,30 @@ devkit_auto_org() {
   printf '%s\n' "${path%%/*}"
 }
 
+devkit_gh_orgs() {
+  # Print orgs the current `gh` user belongs to, one per line.
+  # Silently empty if gh is missing, unauthenticated, or the API call fails.
+  # The `--paginate` flag walks past the 30-org first page if the user is in
+  # more orgs than that.
+  command -v gh >/dev/null 2>&1 || return 0
+  gh auth status >/dev/null 2>&1 || return 0
+  gh api --paginate user/orgs --jq '.[].login' 2>/dev/null || true
+}
+
 devkit_orgs_list() {
   local file auto line seen=""
-  file="$(devkit_orgs_file)"
-  auto="$(devkit_auto_org)"
 
+  # 1. Dynamic source: orgs the gh user is a member of right now.
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    case ":$seen:" in *":$line:"*) continue ;; esac
+    seen="$seen:$line"
+    printf '%s\n' "$line"
+  done < <(devkit_gh_orgs)
+
+  # 2. User-curated additions in orgs.conf (e.g. orgs you want pinned even
+  #    if gh discovery does not surface them).
+  file="$(devkit_orgs_file)"
   if [[ -f "$file" ]]; then
     while IFS= read -r line || [[ -n "$line" ]]; do
       line="${line%%#*}"                 # strip comments
@@ -53,6 +82,8 @@ devkit_orgs_list() {
     done < "$file"
   fi
 
+  # 3. Fallback: the org that hosts this devkit checkout itself.
+  auto="$(devkit_auto_org)"
   if [[ -n "$auto" ]]; then
     case ":$seen:" in *":$auto:"*) : ;; *) printf '%s\n' "$auto" ;; esac
   fi
