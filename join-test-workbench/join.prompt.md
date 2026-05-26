@@ -48,7 +48,37 @@ If the URL is malformed, ask for a new one. Loop until valid.
 
 Resolve the canonical clone URL (prefer the form `gh` is happy with for `git clone`).
 
-### 0d — Confirm
+### 0d — Verify repo access
+
+Before asking the user to confirm, check that the joiner can actually see the repo:
+
+```bash
+gh api "repos/${ORG}/${REPO_NAME}" >/dev/null 2>&1
+```
+
+A 404 here is ambiguous on purpose: GitHub returns the same response whether the repo does not exist or it exists privately and the joiner has no access. Treat both the same way. If the probe fails, stop and tell the user:
+
+```
+Cannot reach ${ORG}/${REPO_NAME} as @${GH_USER}.
+
+Two possible causes:
+  - The repo does not exist (check the URL spelling).
+  - The repo is private and your account does not have access.
+
+If it is private, ask a repo admin to grant @${GH_USER} at least Write
+access:
+  Repo > Settings > Collaborators and teams > Add people
+  Pick @${GH_USER}, role: Write
+
+(Read works for the clone, but Write is needed to push the CODEOWNERS
+update; otherwise the flow falls back to opening a PR.)
+
+Then re-run:  join.auto.wb ${WB_URL}
+```
+
+Do not proceed to Step 1 until the probe succeeds.
+
+### 0e — Confirm
 
 Tell the user what you're about to do:
 

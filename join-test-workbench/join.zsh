@@ -41,6 +41,57 @@ done
 [[ -n "$WB_URL" ]] || { echo "Usage: join.auto.wb <workbench-url>" >&2; exit 1; }
 [[ -f "$PROMPT_FILE" ]] || { echo "join.prompt.md not found at $PROMPT_FILE" >&2; exit 1; }
 
+# Parse <ORG>/<REPO> from WB_URL. Accepts:
+#   https://github.com/ORG/REPO[.git]
+#   git@github.com:ORG/REPO.git
+#   git@<custom-host>:ORG/REPO.git
+parse_org_repo() {
+  local url="$1" path
+  path="${url#*://*/}"          # strip scheme://host/
+  path="${path#*:}"             # strip user@host:
+  path="${path%.git}"           # strip .git
+  ORG="${path%%/*}"
+  REPO_NAME="${path#*/}"
+  REPO_NAME="${REPO_NAME%%/*}"  # keep only first sub-segment
+  [[ -n "$ORG" && -n "$REPO_NAME" && "$ORG" != "$path" ]]
+}
+
+ORG=""; REPO_NAME=""
+if ! parse_org_repo "$WB_URL"; then
+  cat >&2 <<EOF
+join.auto.wb: could not parse <ORG>/<REPO> from URL: $WB_URL
+Expected one of:
+  https://github.com/ORG/REPO[.git]
+  git@github.com:ORG/REPO.git
+EOF
+  exit 1
+fi
+
+# Pre-flight: probe the repo with the joiner's gh credentials. A 404 means
+# the repo either does not exist or is private and out of reach. Bail with
+# a clear message instead of spinning up an agent that will fail at clone.
+# Only run the probe when gh is installed and authenticated; otherwise the
+# in-prompt Step 0b will handle the unauthed case.
+if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+  if ! gh api "repos/${ORG}/${REPO_NAME}" >/dev/null 2>&1; then
+    GH_USER="$(gh api user -q .login 2>/dev/null || echo '?')"
+    cat >&2 <<EOF
+join.auto.wb: cannot resolve ${ORG}/${REPO_NAME} as @${GH_USER}.
+
+Two possible causes:
+  - The repo does not exist (typo in the URL).
+  - The repo is private and your account does not have access.
+
+If it is private, ask a repo admin to grant @${GH_USER} at least Write
+access (Read works for the clone, but Write is needed to push the
+CODEOWNERS update; otherwise the flow falls back to opening a PR).
+
+Then re-run:  join.auto.wb ${WB_URL}
+EOF
+    exit 1
+  fi
+fi
+
 # Pick agent
 if [[ -z "$AGENT" ]]; then
   if command -v devin >/dev/null 2>&1; then AGENT="devin"
