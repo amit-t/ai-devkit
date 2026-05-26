@@ -71,7 +71,17 @@ Any joiner running join.auto.wb will be appended to the same CODEOWNERS line.
 
 ### 0d — Org selection
 
-Ask which GitHub org hosts the `${TEMPLATE_SLUG}` template (and where the new repo should live). Use the shared devkit org list:
+Ask which GitHub org hosts the `${TEMPLATE_SLUG}` template (and where the new repo should live). NEVER assume the org. ALWAYS prompt, even if only one org is available.
+
+The list is built dynamically from three sources, in order:
+
+1. `gh api user/orgs` — every org the current gh user belongs to.
+2. `orgs.conf` — user-curated additions (orgs you want pinned even if gh
+   discovery does not surface them, e.g. collaborator-only repos in a
+   partner org).
+3. The org that hosts this devkit checkout (auto-detected from origin).
+
+Use the shared devkit org list:
 
 ```bash
 orgs.wb show
@@ -80,10 +90,14 @@ orgs.wb show
 That prints a numbered menu like:
 
 ```
-  [1] Invenco-Cloud-Systems-ICS
-  [2] <auto-detected-org-from-devkit-origin>
+  [1] <gh-org-1>                              (from gh api user/orgs)
+  [2] <gh-org-2>                              (from gh api user/orgs)
+  [3] <orgs.conf-entry>                       (from orgs.conf, if any)
+  [4] <auto-detected-org-from-devkit-origin>
   [N] Personal (enter your GitHub handle)
 ```
+
+Numbering is dynamic. If `gh` is missing or unauthenticated, the gh entries are silently omitted and the menu falls back to `orgs.conf` + auto-detected. Whatever the user picks becomes `ORG`.
 
 Mapping rules are identical to `init.wb`. If `orgs.wb` is not on PATH:
 
