@@ -37,6 +37,9 @@ mkdir -p \
   "$fake_devkit/init-workbench" \
   "$fake_devkit/join-workbench" \
   "$fake_devkit/update-workbench" \
+  "$fake_devkit/init-test-workbench" \
+  "$fake_devkit/join-test-workbench" \
+  "$fake_devkit/update-test-workbench" \
   "$fake_devkit/devkit-doctor" \
   "$fake_devkit/devkit-upgrade" \
   "$fake_devkit/orgs-workbench"
@@ -51,6 +54,9 @@ cp "${REPO_ROOT}/lib/bootstrap-detection.sh" "$fake_devkit/lib/bootstrap-detecti
 print -r -- '#!/usr/bin/env zsh' > "$fake_devkit/init-workbench/init.zsh"
 print -r -- '#!/usr/bin/env zsh' > "$fake_devkit/join-workbench/join.zsh"
 print -r -- '#!/usr/bin/env zsh' > "$fake_devkit/update-workbench/update.zsh"
+print -r -- '#!/usr/bin/env zsh' > "$fake_devkit/init-test-workbench/init.zsh"
+print -r -- '#!/usr/bin/env zsh' > "$fake_devkit/join-test-workbench/join.zsh"
+print -r -- '#!/usr/bin/env zsh' > "$fake_devkit/update-test-workbench/update.zsh"
 print -r -- '#!/usr/bin/env zsh' > "$fake_devkit/devkit-doctor/devkit-doctor.zsh"
 print -r -- '#!/usr/bin/env zsh' > "$fake_devkit/devkit-upgrade/devkit-upgrade.zsh"
 print -r -- '#!/usr/bin/env zsh' > "$fake_devkit/orgs-workbench/orgs.zsh"

@@ -17,15 +17,6 @@
 
 set -euo pipefail
 
-# ── Version-check preamble ──────────────────────────────────────────────────
-LIBVC="${HOME}/.local/share/wb-versioncheck/version-check.sh"
-if [[ -f "$LIBVC" ]]; then
-  # shellcheck disable=SC1090
-  _VERCHECK_LIB_DIR_OVERRIDE="${LIBVC:h}" . "$LIBVC"
-  WB_TEMPLATE_VERSION_FILE="${PWD}/.workbench-state/template-version.json" \
-    _wb_versioncheck wb || true
-fi
-
 SCRIPT_DIR="${0:A:h}"
 PROMPT_FILE="${SCRIPT_DIR}/update.prompt.md"
 
@@ -113,6 +104,19 @@ WB_DIR="$(_find_wb_root)" || {
 
 cd "$WB_DIR"
 
+# ── Version-check preamble ──────────────────────────────────────────────────
+# Resolve the nag against the workbench root (WB_DIR), not the invocation cwd.
+# Running wb.upgrade from a subdirectory previously made the version check read
+# a non-existent ${PWD}/.workbench-state/template-version.json, report local
+# version 0.0.0, and fire a false "update available" banner on an up-to-date wb.
+LIBVC="${HOME}/.local/share/wb-versioncheck/version-check.sh"
+if [[ -f "$LIBVC" ]]; then
+  # shellcheck disable=SC1090
+  _VERCHECK_LIB_DIR_OVERRIDE="${LIBVC:h}" . "$LIBVC"
+  WB_TEMPLATE_VERSION_FILE="${WB_DIR}/.workbench-state/template-version.json" \
+    _wb_versioncheck wb || true
+fi
+
 source ./project.conf
 UPSTREAM_URL="${WORKBENCH_TEMPLATE_UPSTREAM:-}"
 [[ -n "$UPSTREAM_URL" ]] || { echo "WORKBENCH_TEMPLATE_UPSTREAM not set in project.conf" >&2; exit 1; }
@@ -184,6 +188,26 @@ while IFS= read -r tpl_path; do
   fi
 done <<< "$TEMPLATE_PATHS"
 
+# ── Stamp template-version.json so the version-check nag reflects upstream ───
+# Refresh the stamp BEFORE the diff check so an up-to-date wb whose stamp is
+# missing or behind also gets corrected (otherwise the "Already up to date"
+# early-exit below skips stamping and the nag never clears). Only rewrites when
+# the upstream version differs from the current stamp, so repeat runs stay
+# idempotent (no churn commit).
+_stamp_template_version() {
+  local stamp_file="$WB_DIR/.workbench-state/template-version.json"
+  local upstream_v_json upstream_v current_v
+  upstream_v_json="$(git show "upstream/main:version.json" 2>/dev/null)" || return 0
+  upstream_v="$(printf '%s' "$upstream_v_json" | jq -r '.version // empty' 2>/dev/null)"
+  [[ -z "$upstream_v" ]] && return 0
+  current_v=""
+  [[ -f "$stamp_file" ]] && current_v="$(jq -r '.version // empty' "$stamp_file" 2>/dev/null)"
+  [[ "$upstream_v" == "$current_v" ]] && return 0
+  mkdir -p "$WB_DIR/.workbench-state"
+  printf '%s\n' "$upstream_v_json" | jq '. + {stamped_at: (now|todate)}' > "$stamp_file"
+}
+_stamp_template_version
+
 # Re-stage and check diff
 git add -A
 if git diff --cached --quiet; then
@@ -193,14 +217,6 @@ if git diff --cached --quiet; then
 fi
 
 UPSTREAM_SHA="$(git rev-parse --short upstream/main)"
-
-# ── Stamp template-version.json so wb.upgrade nags fire correctly ──────────
-TEMPLATE_VERSION_FILE="$WB_DIR/.workbench-state/template-version.json"
-if upstream_v_json="$(git -C "$WB_DIR" show "upstream/main:version.json" 2>/dev/null)"; then
-  mkdir -p "$WB_DIR/.workbench-state"
-  printf '%s\n' "$upstream_v_json" | jq '. + {stamped_at: (now|todate)}' > "$TEMPLATE_VERSION_FILE"
-  git -C "$WB_DIR" add .workbench-state/template-version.json
-fi
 
 git commit -m "chore: sync template-owned files from ai-workbench@${UPSTREAM_SHA}"
 
