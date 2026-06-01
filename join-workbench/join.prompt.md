@@ -306,6 +306,34 @@ zsh "${DEVKIT_DIR}/lib/wb-context-scan.zsh" aggregate "${WB_DIR}"
 
 ---
 
+## Step 5c — Graphify new repos (and ensure SKILL.md is present)
+
+Resolve `GRAPHIFY_MODE` (CLI override > `WB_GRAPHIFY_MODE` env > `project.conf GRAPHIFY_MODE` > default `auto`). In `auto`, run a one-time SKILL.md install for the joiner (idempotent — initiator may have already run it), then graphify only the newly-added repos. Existing repos already at `graphified=true` in `project.conf REPOS` are skipped automatically by `--all`.
+
+```bash
+cd "${WB_DIR}"
+# shellcheck disable=SC1091
+source ./project.conf
+GRAPHIFY_MODE="${WB_GRAPHIFY_MODE:-${GRAPHIFY_MODE:-auto}}"
+
+if [[ "$GRAPHIFY_MODE" == "auto" ]]; then
+  # Idempotent: writes/overwrites .agents/skills/graphify/SKILL.md + symlink.
+  ./scripts/graphify-repos.sh --install-skill \
+    ${WB_GRAPHIFY_NO_INSTALL:+--no-install} \
+    || echo "join.wb: wb.graphify --install-skill failed (continuing; rerun later)" >&2
+
+  # Walk REPOS; --all skips entries already at graphified=true so only the
+  # joiner's added repos (graphified=false from register-repo.sh) get processed.
+  ./scripts/graphify-repos.sh --all \
+    ${WB_GRAPHIFY_NO_INSTALL:+--no-install} \
+    || echo "join.wb: wb.graphify --all had failures (continuing; rerun via wb.graphify --all)" >&2
+else
+  echo "join.wb: GRAPHIFY_MODE=$GRAPHIFY_MODE — skipping auto-graphify. Run wb.graphify --all when ready."
+fi
+```
+
+---
+
 ## Step 6 — Add joiner to CODEOWNERS
 
 `JOINER` already resolved in Step 0.
