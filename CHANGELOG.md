@@ -2,6 +2,27 @@
 
 All notable changes to ai-devkit are documented here. release-please appends entries on every merge to `main` based on Conventional Commit messages.
 
+## [1.4.0](https://github.com/Invenco-Cloud-Systems-ICS/ai-devkit/compare/v1.3.1...v1.4.0) (2026-06-01)
+
+
+### Features
+
+* add adopt.auto.wb for adopting existing repos into the workbench template ([29facc6](https://github.com/Invenco-Cloud-Systems-ICS/ai-devkit/commit/29facc67da93733b1b79094895599816a29d2cdd))
+* add adopt.auto.wb for adopting existing repos into the workbench template ([eaf62b8](https://github.com/Invenco-Cloud-Systems-ICS/ai-devkit/commit/eaf62b8519a7ae31762429ae0a6c0fc8fe850ee7))
+* add init.auto.wb / join.auto.wb / update.auto.wb for test-automation workbench ([61446dc](https://github.com/Invenco-Cloud-Systems-ICS/ai-devkit/commit/61446dc17be6de896373a8147b57ec29db46b37b))
+* add init.auto.wb / join.auto.wb / update.auto.wb for test-automation workbench ([99952d7](https://github.com/Invenco-Cloud-Systems-ICS/ai-devkit/commit/99952d768ff0260de0d89438606a361f0bbcb47a))
+* **init,join:** wire wb.graphify into init.wb and join.wb prompts ([#26](https://github.com/Invenco-Cloud-Systems-ICS/ai-devkit/issues/26)) ([b90b93a](https://github.com/Invenco-Cloud-Systems-ICS/ai-devkit/commit/b90b93aded2ce2f059a48b2f7baaf64c206a9058))
+* **join.auto.wb:** pre-flight repo access check ([4309834](https://github.com/Invenco-Cloud-Systems-ICS/ai-devkit/commit/430983479736cd72d4914f644ece19a2c4b09d58))
+* **join.auto.wb:** pre-flight repo access check ([186a61a](https://github.com/Invenco-Cloud-Systems-ICS/ai-devkit/commit/186a61acbb2a1842a1def24681b3f593e90d20ae))
+* **orgs:** discover orgs dynamically from `gh api user/orgs` ([fa956d8](https://github.com/Invenco-Cloud-Systems-ICS/ai-devkit/commit/fa956d8fe530d326753c8b4de1910ad77863b1b0))
+* **orgs:** discover orgs dynamically from `gh api user/orgs` ([16c3163](https://github.com/Invenco-Cloud-Systems-ICS/ai-devkit/commit/16c31631a9ad4d8d9f55232821e0611be2ad18ff))
+
+
+### Bug Fixes
+
+* **update.wb:** resolve version nag against wb root, not invocation cwd ([99216db](https://github.com/Invenco-Cloud-Systems-ICS/ai-devkit/commit/99216db0227bfd81b1fb57f1ea5abcacdc492893))
+* **update.wb:** resolve version nag against wb root, not invocation cwd ([4d9d4a7](https://github.com/Invenco-Cloud-Systems-ICS/ai-devkit/commit/4d9d4a785c1076a250e5b7cc5235fa36bf192740))
+
 ## [1.3.1](https://github.com/amit-t/ai-devkit/compare/v1.3.0...v1.3.1) (2026-05-19)
 
 
