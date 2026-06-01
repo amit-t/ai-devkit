@@ -2,6 +2,24 @@
 
 All notable changes to ai-devkit are documented here. release-please appends entries on every merge to `main` based on Conventional Commit messages.
 
+## [1.4.0](https://github.com/amit-t/ai-devkit/compare/v1.3.1...v1.4.0) (2026-06-01)
+
+
+### Features
+
+* add init.auto.wb / join.auto.wb / update.auto.wb for test-automation workbench ([61446dc](https://github.com/amit-t/ai-devkit/commit/61446dc17be6de896373a8147b57ec29db46b37b))
+* add init.auto.wb / join.auto.wb / update.auto.wb for test-automation workbench ([99952d7](https://github.com/amit-t/ai-devkit/commit/99952d768ff0260de0d89438606a361f0bbcb47a))
+* **init,join:** wire wb.graphify into init.wb and join.wb prompts ([#27](https://github.com/amit-t/ai-devkit/issues/27)) ([f7d1761](https://github.com/amit-t/ai-devkit/commit/f7d1761747b6eb045dec69f409ac85fe586e600a))
+* **join.auto.wb:** pre-flight repo access check ([4309834](https://github.com/amit-t/ai-devkit/commit/430983479736cd72d4914f644ece19a2c4b09d58))
+* **join.auto.wb:** pre-flight repo access check ([186a61a](https://github.com/amit-t/ai-devkit/commit/186a61acbb2a1842a1def24681b3f593e90d20ae))
+* **orgs:** discover orgs dynamically from `gh api user/orgs` ([fa956d8](https://github.com/amit-t/ai-devkit/commit/fa956d8fe530d326753c8b4de1910ad77863b1b0))
+* **orgs:** discover orgs dynamically from `gh api user/orgs` ([16c3163](https://github.com/amit-t/ai-devkit/commit/16c31631a9ad4d8d9f55232821e0611be2ad18ff))
+
+
+### Bug Fixes
+
+* **update.wb:** resolve version nag against wb root, not invocation cwd ([#26](https://github.com/amit-t/ai-devkit/issues/26)) ([732d05b](https://github.com/amit-t/ai-devkit/commit/732d05b66342b2af6eb9948ed8a95898c7648823))
+
 ## [1.3.1](https://github.com/amit-t/ai-devkit/compare/v1.3.0...v1.3.1) (2026-05-19)
 
 
