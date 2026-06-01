@@ -542,7 +542,36 @@ After all repos:
 zsh "${DEVKIT_DIR}/lib/wb-context-scan.zsh" aggregate "${WB_DIR}"
 ```
 
-Continue to 3.11. The wb's initial commit (3.12) picks up `context/` automatically.
+### 3.10d — Graphify integration per cloned repo
+
+Resolve `GRAPHIFY_MODE` (CLI override > `WB_GRAPHIFY_MODE` env > `project.conf GRAPHIFY_MODE` > default `auto`). In `auto`, run a one-time SKILL.md install for the wb, then graphify every registered repo. Skip silently in `manual` — `wb.register-repo` and `wb.info` surface the recommendation later.
+
+```bash
+cd "${WB_DIR}"
+# shellcheck disable=SC1091
+source ./project.conf
+GRAPHIFY_MODE="${WB_GRAPHIFY_MODE:-${GRAPHIFY_MODE:-auto}}"
+
+if [[ "$GRAPHIFY_MODE" == "auto" ]]; then
+  # 1. One-time SKILL.md install (writes .agents/skills/graphify/SKILL.md +
+  #    .claude/skills/graphify symlink). Idempotent. Auto pip-installs
+  #    graphifyy if absent (skip via WB_GRAPHIFY_NO_INSTALL=1).
+  ./scripts/graphify-repos.sh --install-skill \
+    ${WB_GRAPHIFY_NO_INSTALL:+--no-install} \
+    || echo "init.wb: wb.graphify --install-skill failed (continuing; rerun later)" >&2
+
+  # 2. Build graphs for every registered repo. --all walks REPOS and skips
+  #    entries already at graphified=true. Flag flip on success happens
+  #    inside the script.
+  ./scripts/graphify-repos.sh --all \
+    ${WB_GRAPHIFY_NO_INSTALL:+--no-install} \
+    || echo "init.wb: wb.graphify --all had failures (continuing; rerun via wb.graphify --all)" >&2
+else
+  echo "init.wb: GRAPHIFY_MODE=$GRAPHIFY_MODE — skipping auto-graphify. Run wb.graphify --all when ready."
+fi
+```
+
+Continue to 3.11. The wb's initial commit (3.12) picks up `context/`, `.agents/skills/graphify/`, and `graphify-out/` artifacts automatically.
 
 ### 3.11 — Source aliases (note only)
 
