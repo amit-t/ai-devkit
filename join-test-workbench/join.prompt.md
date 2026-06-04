@@ -1,6 +1,6 @@
 # join-test-workbench — Agent Prompt
 
-You are an automation agent with full permissions. Your job is to join an **existing** test-automation workbench: clone it, add the joiner to CODEOWNERS, install dependencies, and push.
+You are an automation agent with full permissions. Your job is to join an **existing** test-automation workbench: clone it, install dependencies, and confirm setup.
 
 **You have bypass permissions. Do the work. Ask only the interview questions below.**
 
@@ -65,13 +65,10 @@ Two possible causes:
   - The repo does not exist (check the URL spelling).
   - The repo is private and your account does not have access.
 
-If it is private, ask a repo admin to grant @${GH_USER} at least Write
+If it is private, ask a repo admin to grant @${GH_USER} at least Read
 access:
   Repo > Settings > Collaborators and teams > Add people
-  Pick @${GH_USER}, role: Write
-
-(Read works for the clone, but Write is needed to push the CODEOWNERS
-update; otherwise the flow falls back to opening a PR.)
+  Pick @${GH_USER}, role: Read (or Write if they will push branches)
 
 Then re-run:  join.auto.wb ${WB_URL}
 ```
@@ -83,7 +80,6 @@ Do not proceed to Step 1 until the probe succeeds.
 Tell the user what you're about to do:
 
 ```
-You'll be added as a CODEOWNER on ${ORG}/${REPO_NAME}.
 Workbench will be cloned into: ${TARGET_CWD}/${REPO_NAME}/
 Proceed? [Y/n]
 ```
@@ -107,34 +103,7 @@ git pull --rebase
 
 ---
 
-## Step 2 — Add the joiner to CODEOWNERS
-
-```bash
-CODEOWNERS_FILE="${WB_DIR}/.github/CODEOWNERS"
-mkdir -p "${WB_DIR}/.github"
-
-if [[ ! -f "$CODEOWNERS_FILE" ]]; then
-  cat > "$CODEOWNERS_FILE" <<EOF
-# CODEOWNERS — stamped by init.auto.wb / join.auto.wb.
-*  @${GH_USER}
-EOF
-else
-  # Append @${GH_USER} to the existing `*` line if not already there.
-  if grep -E "^\*\s.*@${GH_USER}\b" "$CODEOWNERS_FILE" >/dev/null 2>&1; then
-    echo "Already a codeowner: @${GH_USER}"
-  else
-    if grep -q "^\*\s" "$CODEOWNERS_FILE"; then
-      sed -i.bak -E "/^\*\s/ s/$/ @${GH_USER}/" "$CODEOWNERS_FILE" && rm -f "${CODEOWNERS_FILE}.bak"
-    else
-      printf "*  @%s\n" "${GH_USER}" >> "$CODEOWNERS_FILE"
-    fi
-  fi
-fi
-```
-
----
-
-## Step 3 — Install dependencies
+## Step 2 — Install dependencies
 
 The template ships `package.json` (Playwright + types). Run:
 
@@ -159,31 +128,7 @@ test -f playwright.config.ts && echo "config OK"
 
 ---
 
-## Step 4 — Commit and push the CODEOWNERS update
-
-```bash
-cd "${WB_DIR}"
-git add .github/CODEOWNERS
-if ! git diff --cached --quiet; then
-  git commit -m "chore: add @${GH_USER} to CODEOWNERS (join.auto.wb)"
-  git push origin HEAD
-fi
-```
-
-If the push fails because the user does not have direct push access, fall back to opening a small PR:
-
-```bash
-BRANCH="joiner/${GH_USER}-codeowners"
-git checkout -b "${BRANCH}"
-git push origin "${BRANCH}"
-gh pr create \
-  --title "chore: add @${GH_USER} to CODEOWNERS" \
-  --body "Stamped by join.auto.wb on $(date -u +"%Y-%m-%d"). No code changes."
-```
-
----
-
-## Step 5 — Tell the user
+## Step 3 — Tell the user
 
 ```
 Joined ${ORG}/${REPO_NAME} as @${GH_USER}.
