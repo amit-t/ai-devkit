@@ -34,7 +34,7 @@ layout: default
 
 ```
 install.zsh          → registers init.wb / join.wb / update.wb / orgs.wb globally
-init.wb              → preflight → create wb-<label> repo → clone code repos → render manifests → ralph-enable
+init.wb              → preflight → create workbench-<label> repo → clone code repos → render manifests → ralph-enable
 join.wb <url>        → preflight → clone workbench → add joiner to CODEOWNERS → register extra repos
 update.wb            → pull template-owned updates into existing workbench
 orgs.wb add <slug>   → expand machine-local GitHub org menu
