@@ -78,7 +78,7 @@ init.wb
 - design references (optional)
 - MCP servers to enable (Atlassian / Figma / none)
 
-Then it creates `${ORG}/wb-<label>`, clones registered code repos into `repos/`, renders `project.conf` + `EPIC-PIPELINE.md`, writes CODEOWNERS, runs `ralph-enable` inside the workbench, commits, pushes.
+Then it creates `${ORG}/workbench-<label>` (legacy workbenches use the older `wb-<label>` prefix and remain fully supported), clones registered code repos into `repos/`, renders `project.conf` + `EPIC-PIPELINE.md`, writes CODEOWNERS, runs `ralph-enable` inside the workbench, commits, pushes.
 
 Output:
 

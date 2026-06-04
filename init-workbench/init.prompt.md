@@ -12,7 +12,15 @@ You are an automation agent with full permissions. Your job is to bootstrap a ne
 RALPH_REPO_SLUG="ai-ralph"            # repo name under selected org
 WORKBENCH_TEMPLATE_SLUG="ai-workbench"
 RALPH_LOCAL_DIR="${TOOLS_PARENT}/ai-ralph"   # sibling of ai-devkit
+WORKBENCH_REPO_PREFIX="workbench-"    # new workbenches use this prefix
 ```
+
+> **Repo-prefix history.** New workbenches are named `workbench-<label>`. The
+> legacy prefix was `wb-`. Backward compatibility is total and requires no
+> action here: every consumer command (`join.wb`, `update.wb`, `wb.upgrade`,
+> `devkit doctor`) detects a workbench by its `.workbench-manifest.json` +
+> `project.conf` contents, never by name. Existing `wb-…` workbenches keep
+> working with all commands. Only this creation step changed.
 
 ---
 
@@ -170,7 +178,7 @@ Introduce yourself in one line: "I'll set up a new workbench from the ai-workben
 ### 1a — Identity
 
 Ask together:
-- **Workspace label** — short, kebab-case, lowercase. Example: `example`, `example-refresh`. If blank, derive from primary epic ID + today's date (`wb-<epic-lower>-YYYYMMDD`).
+- **Workspace label** — short, kebab-case, lowercase. Example: `example`, `example-refresh`. If blank, derive from primary epic ID + today's date (`<epic-lower>-YYYYMMDD`). Do **not** bake a `wb-`/`workbench-` prefix into the label; the prefix is added in Step 2.
 - **Primary Jira epic ID** (e.g. `EPIC-001`).
 - **Additional epic IDs** (comma-separated, optional).
 
@@ -209,7 +217,7 @@ Show a compact summary. Ask: **"Ready to set up? [Y/n]"**.
 ## Step 2 — Compute values
 
 - `LABEL` = normalized kebab-case label.
-- `REPO_NAME` = `wb-${LABEL}` (must match `^wb-[a-z0-9][a-z0-9-]*$`, max 60 chars).
+- `REPO_NAME` = `${WORKBENCH_REPO_PREFIX}${LABEL}` → `workbench-${LABEL}` (must match `^workbench-[a-z0-9][a-z0-9-]*$`, max 60 chars). New workbenches always use the `workbench-` prefix; the legacy `wb-` prefix is no longer minted but remains fully supported by all consumer commands.
 - `REPO_URL` = `https://github.com/${ORG}/${REPO_NAME}`
 - `TEMPLATE_UPSTREAM_URL` = `https://github.com/${ORG}/ai-workbench`
 - `CREATED_BY` = `$(gh api user -q .login)`
