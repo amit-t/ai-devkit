@@ -177,7 +177,7 @@ cd "${TARGET_CWD}"
 git clone "${WB_URL}"
 ```
 
-Derive `WB_DIR` = the cloned directory name (repo slug, e.g. `wb-payments-pi3`).
+Derive `WB_DIR` = the cloned directory name (repo slug). This is prefix-agnostic: it works for both new `workbench-…` repos (e.g. `workbench-payments-pi3`) and legacy `wb-…` repos (e.g. `wb-payments-pi3`). Never assume or validate a name prefix — always take the slug from the clone.
 
 ```bash
 cd "${WB_DIR}"
