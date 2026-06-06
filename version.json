@@ -1,6 +1,6 @@
 {
-  "version": "1.2.2",
-  "released": "2026-05-09",
+  "version": "1.3.0",
+  "released": "2026-06-06",
   "check_ttl_hours": 12,
   "channel": "stable",
   "requires": {},

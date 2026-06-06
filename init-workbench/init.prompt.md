@@ -379,6 +379,16 @@ gh api "repos/${ORG}/ai-workbench/contents/version.json?ref=main" \
 
 This file gates `wb.upgrade` notifications. Future `wb.upgrade` runs refresh it.
 
+### 3.4d - Workbench Lite machine bootstrap (only when `LITE_MODE=true`)
+
+If Runtime Context has `LITE_MODE=true`, run the deterministic devkit helper before rendering `project.conf`. This installs the Ralph Devin engine and writes the idempotent shell profile block that exposes `ralph-devin`, `rpd`, and `rpd.p` in a fresh login shell:
+
+```bash
+zsh "${DEVKIT_DIR}/init-workbench/lite-bootstrap.zsh" --help >/dev/null
+```
+
+Do not create `${WB_DIR}/.ralph/` in this step. Per-app repo-local Ralph setup happens after `project.conf` is rendered, because it needs the final `REPOS` array.
+
 ### 3.5 — Render project.conf from template
 
 Read `${WB_DIR}/project.conf.template`. Substitute:
@@ -395,6 +405,18 @@ Read `${WB_DIR}/project.conf.template`. Substitute:
 | `{{REPOS_BASH_ENTRIES}}` | one line per repo, two-space indented: `  "name=X;url=Y;role=Z;stack=S;added_by=${CREATED_BY}"` |
 
 Write result to `${WB_DIR}/project.conf`. Keep `project.conf.template` in place — it is template-owned and `update.wb` will refresh it.
+
+If Runtime Context has `LITE_MODE=true`, immediately run the Lite bootstrap against the stamped workbench:
+
+```bash
+zsh "${DEVKIT_DIR}/init-workbench/lite-bootstrap.zsh" --wb-dir "${WB_DIR}"
+```
+
+This helper installs `ralph-devin` when missing, updates the user's login shell profile idempotently, verifies a fresh shell resolves `rpd.p`, runs plain `ralph enable` inside each `repos/<app>/` from `project.conf`, appends the Workbench Lite defaults block to `project.conf`, and refuses any workbench-root `.ralph/`. If it fails, leave the workbench recoverable and report exactly:
+
+```text
+Lite setup incomplete: rpd.p not found. Run devkit doctor or install Ralph, then rerun init.wb --lite.
+```
 
 ### 3.6 — Render EPIC-PIPELINE.md from template
 
@@ -480,6 +502,8 @@ done
 ```
 
 ### 3.10b — Enable ai-ralph in the workbench only
+
+If Runtime Context has `LITE_MODE=true`, skip this step. Workbench Lite uses `${WB_DIR}/repos/.ralph/` workspace mode plus `repos/<app>/.ralph/` repo-local Ralph state, and must not create `${WB_DIR}/.ralph/`.
 
 <!-- TODO(ai-ralph-workspace-mode): Rewrite this step once ai-ralph's "workspace mode"
      PR merges. Trigger phrase: "ralph workspace mode is ready". When fired, re-read
