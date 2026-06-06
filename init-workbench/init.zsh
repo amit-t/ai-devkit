@@ -5,6 +5,8 @@
 #
 # Usage:
 #   init.wb                           # Devin by default; Claude if devin missing
+#   init.wb --lite                    # include Workbench Lite bootstrap
+#   init.wb --lite --undo             # remove Lite shell profile block
 #   init.wb --agent devin             # force Devin
 #   init.wb --agent claude            # force Claude
 #   init.wb --cwd /path/to/empty/dir  # override target working directory
@@ -25,19 +27,25 @@ PROMPT_FILE="${SCRIPT_DIR}/init.prompt.md"
 # ── Parse args ─────────────────────────────────────────────────────────────
 AGENT=""
 TARGET_CWD="$(pwd)"
+LITE_MODE=false
+LITE_UNDO=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --agent)  AGENT="${2:-}"; shift 2 ;;
     --cwd)    TARGET_CWD="${2:-}"; shift 2 ;;
+    --lite)   LITE_MODE=true; shift ;;
+    --undo)   LITE_UNDO=true; shift ;;
     -h|--help)
       cat <<'USAGE'
 init.wb — Initiate a new workbench from the ai-workbench template.
 
-  init.wb                 Use Devin (fallback Claude).
-  init.wb --agent devin   Force Devin.
-  init.wb --agent claude  Force Claude.
-  init.wb --cwd <dir>     Set target directory (default: current).
+  init.wb                  Use Devin (fallback Claude).
+  init.wb --lite           Include Workbench Lite bootstrap in the init agent prompt.
+  init.wb --lite --undo    Remove the Workbench Lite shell profile block and exit.
+  init.wb --agent devin    Force Devin.
+  init.wb --agent claude   Force Claude.
+  init.wb --cwd <dir>      Set target directory (default: current).
 USAGE
       exit 0 ;;
     *) echo "Unknown flag: $1" >&2; exit 1 ;;
@@ -46,6 +54,15 @@ done
 
 [[ -f "$PROMPT_FILE" ]] || { echo "init.prompt.md not found at $PROMPT_FILE" >&2; exit 1; }
 [[ -d "$TARGET_CWD" ]] || { echo "Target directory missing: $TARGET_CWD" >&2; exit 1; }
+
+if [[ "$LITE_UNDO" == true ]]; then
+  if [[ "$LITE_MODE" != true ]]; then
+    echo "--undo is only valid with --lite" >&2
+    exit 1
+  fi
+  zsh "$SCRIPT_DIR/lite-bootstrap.zsh" --undo
+  exit 0
+fi
 
 # ── Pick agent ─────────────────────────────────────────────────────────────
 if [[ -z "$AGENT" ]]; then
@@ -77,6 +94,7 @@ FULL_PROMPT="$(cat "$PROMPT_FILE")
 TARGET_CWD=${TARGET_CWD}
 INITIATOR_PWD=${TARGET_CWD}
 AGENT=${AGENT}
+LITE_MODE=${LITE_MODE}
 DEVKIT_DIR=${DEVKIT_DIR}
 TOOLS_PARENT=${TOOLS_PARENT}
 RUN_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
