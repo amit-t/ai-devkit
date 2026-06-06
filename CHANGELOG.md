@@ -2,6 +2,14 @@
 
 All notable changes to ai-devkit are documented here. release-please appends entries on every merge to `main` based on Conventional Commit messages.
 
+
+## [1.3.0](https://github.com/amit-t/ai-devkit/compare/v1.2.2...v1.3.0) (2026-06-06)
+
+
+### Features
+
+* **init:** add Workbench Lite bootstrap with Ralph Devin setup
+
 ## [1.2.2](https://github.com/amit-t/ai-devkit/compare/v1.2.1...v1.2.2) (2026-05-14)
 
 
