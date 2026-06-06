@@ -1,9 +1,9 @@
 #!/usr/bin/env zsh
 # install.zsh — Install ai-devkit commands globally.
 #   init.wb / join.wb / update.wb              (planning workbench)
-#   init.auto.wb / join.auto.wb / update.auto.wb  (test-automation workbench)
+#   init.auto.wb / join.auto.wb / update.auto.wb / adopt.auto.wb  (test-automation workbench)
 #   orgs.wb                                     (shared org list)
-# All three forms also get .dev (force Devin) and .cly (force Claude) variants.
+# All four forms also get .dev (force Devin) and .cly (force Claude) variants.
 #
 # Usage: ./install.zsh [--yes|-y|--non-interactive]
 #
@@ -217,6 +217,12 @@ install_cmd "update.auto.wb" "$SCRIPT_DIR/update-test-workbench/update.zsh"
 add_alias "alias update.auto.wb='$SCRIPT_DIR/update-test-workbench/update.zsh'"                "alias update.auto.wb="
 add_alias "alias update.auto.wb.dev='$SCRIPT_DIR/update-test-workbench/update.zsh --agent devin'"  "alias update.auto.wb.dev="
 add_alias "alias update.auto.wb.cly='$SCRIPT_DIR/update-test-workbench/update.zsh --agent claude'" "alias update.auto.wb.cly="
+
+# ── adopt.auto.wb (archive + recreate branches from template) ───────────────
+install_cmd "adopt.auto.wb"  "$SCRIPT_DIR/adopt-test-workbench/adopt.zsh"
+add_alias "alias adopt.auto.wb='$SCRIPT_DIR/adopt-test-workbench/adopt.zsh'"                "alias adopt.auto.wb="
+add_alias "alias adopt.auto.wb.dev='$SCRIPT_DIR/adopt-test-workbench/adopt.zsh --agent devin'"  "alias adopt.auto.wb.dev="
+add_alias "alias adopt.auto.wb.cly='$SCRIPT_DIR/adopt-test-workbench/adopt.zsh --agent claude'" "alias adopt.auto.wb.cly="
 
 # ── orgs.wb ─────────────────────────────────────────────────────────────────
 install_cmd "orgs.wb"     "$SCRIPT_DIR/orgs-workbench/orgs.zsh"

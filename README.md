@@ -55,6 +55,7 @@ Run once per machine. After that, the commands are available from any directory.
 | `init.auto.wb`                   | Initiator | Devin (falls back to Claude)           | `init.auto.wb.dev`, `init.auto.wb.cly`     |
 | `join.auto.wb <workbench-url>`   | Joiner    | Devin (falls back to Claude)           | `join.auto.wb.dev`, `join.auto.wb.cly`     |
 | `update.auto.wb`                 | Either    | Devin (only if interactive conflict)   | `update.auto.wb.dev`, `update.auto.wb.cly` |
+| `adopt.auto.wb <repo-url>`       | Initiator | Devin (falls back to Claude)           | `adopt.auto.wb.dev`, `adopt.auto.wb.cly`   |
 
 All commands launch the configured agent with a role-specific prompt. The agent handles the interview, repo creation, templating, and git operations; the shell scripts are thin launchers.
 
@@ -145,6 +146,7 @@ ai-devkit/
 ├── init-test-workbench/       # init.auto.wb  → ai-test-automation-workbench template
 ├── join-test-workbench/       # join.auto.wb
 ├── update-test-workbench/     # update.auto.wb (interactive prompt only on conflict)
+├── adopt-test-workbench/      # adopt.auto.wb (archive + recreate branches from template)
 ├── orgs-workbench/            # orgs.wb (shared org list helper)
 ├── lib/                       # orgs.sh + other shared helpers
 └── tests/                     # zsh regression tests (run via tests/run-all.zsh)

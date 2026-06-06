@@ -8,6 +8,7 @@ All notable changes to ai-devkit are documented here. release-please appends ent
 
 ### Features
 
+* add adopt.auto.wb for adopting existing repos into the test-automation workbench ([29facc6](https://github.com/Invenco-Cloud-Systems-ICS/ai-devkit/commit/29facc67da93733b1b79094895599816a29d2cdd))
 * add init.auto.wb / join.auto.wb / update.auto.wb for test-automation workbench ([61446dc](https://github.com/amit-t/ai-devkit/commit/61446dc17be6de896373a8147b57ec29db46b37b))
 * add init.auto.wb / join.auto.wb / update.auto.wb for test-automation workbench ([99952d7](https://github.com/amit-t/ai-devkit/commit/99952d768ff0260de0d89438606a361f0bbcb47a))
 * bootstrap ralph workspace in init.wb / join.wb / update.wb (Plan F) ([ef184e7](https://github.com/amit-t/ai-devkit/commit/ef184e7c261bbd9fd9ebe9dce3448b544cdca1e3))
@@ -60,6 +61,7 @@ All notable changes to ai-devkit are documented here. release-please appends ent
 
 ### Bug Fixes
 
+* **join-test-workbench:** remove CODEOWNERS auto-add during join.auto.wb ([3472046](https://github.com/Invenco-Cloud-Systems-ICS/ai-devkit/commit/3472046770c815e33337dbd96ec5dfe373d22de1))
 * **install:** strip stale DEVKIT_CLONE before appending to ~/.zprofile ([e3a6e57](https://github.com/amit-t/ai-devkit/commit/e3a6e57564a1a329406221270789e87c04b5adea))
 * **install:** two install/upgrade bugs that brick wb.upgrade on macOS ([#17](https://github.com/amit-t/ai-devkit/issues/17)) ([8b6ee77](https://github.com/amit-t/ai-devkit/commit/8b6ee7704d1400bdfe95fb634233f77bbc7a62fb))
 * **orgs.wb,init.wb:** resolve symlink + rebuild stale template .ralph ([72518c5](https://github.com/amit-t/ai-devkit/commit/72518c588200195eb0258eac52602aa198d7966f))
