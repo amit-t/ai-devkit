@@ -12,7 +12,7 @@ layout: default
 - **Org list management** — `orgs.wb` (list/add/remove/show) keeps a machine-local GitHub org list. The org hosting your devkit checkout is auto-included.
 - **Preflight hygiene** — both `init.wb` and `join.wb` verify required CLIs, confirm the active `gh` account, and offer switch / login flows before touching remote resources.
 - **Per-repo domain context** — `init.wb` / `join.wb` auto-build a `context/<name>/CONTEXT.md` for every registered source repo, plus an aggregate `context/README.md`. Recover failed scans with `wb.rescan`. See [Repo Context Scan]({{ '/repo-context-scan.html' | relative_url }}).
-- **ai-ralph bootstrap** — on first run per machine, devkit clones and installs [`ai-ralph`]({{ links.ai_ralph_repo }}), then scopes `ralph-enable` to the new workbench only (never into sibling service repos).
+- **ai-ralph bootstrap** - on first run per machine, devkit clones and installs [`ai-ralph`]({{ links.ai_ralph_repo }}). `init.wb --lite` also installs `ralph-devin`, exposes `rpd.p`, and enables Ralph inside each registered app repo.
 
 ## Three Repos, One Story
 
@@ -34,7 +34,7 @@ layout: default
 
 ```
 install.zsh          → registers init.wb / join.wb / update.wb / orgs.wb globally
-init.wb              → preflight → create workbench-<label> repo → clone code repos → render manifests → ralph-enable
+init.wb              -> preflight -> create workbench-<label> repo -> clone code repos -> render manifests -> Ralph setup
 join.wb <url>        → preflight → clone workbench → add joiner to CODEOWNERS → register extra repos
 update.wb            → pull template-owned updates into existing workbench
 orgs.wb add <slug>   → expand machine-local GitHub org menu

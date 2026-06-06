@@ -11,6 +11,8 @@ Bootstrap a new workbench from the `ai-workbench` template.
 
 ```
 init.wb                           # Devin by default; Claude fallback
+init.wb --lite                    # include Workbench Lite bootstrap
+init.wb --lite --undo             # remove Lite shell profile block
 init.wb --agent devin             # force Devin
 init.wb --agent claude            # force Claude
 init.wb --cwd /path/to/empty/dir  # override target directory
@@ -21,8 +23,43 @@ Runs preflight → interview → `gh repo create --template` → clones register
 - After each registered repo is cloned, `init.wb` runs the vendored
   `repo-context-scan` skill against it (sequentially) and writes
   `context/<name>/CONTEXT.md` plus an aggregate `context/README.md`. A
-  scan failure is non-fatal — a stub is written and init continues. See
+  scan failure is non-fatal. A stub is written and init continues. See
   [Repo Context Scan]({{ '/repo-context-scan.html' | relative_url }}).
+
+### Workbench Lite mode
+
+`init.wb --lite` adds the setup required by the ai-workbench `wb.lite` verb. It keeps the normal init interview and stamping flow, then runs the devkit Lite helper after `project.conf` is rendered. The helper:
+
+1. Installs base `ai-ralph` if `ralph` is missing.
+2. Installs `ralph-devin` if the Devin engine is missing.
+3. Writes one marker block to the active zsh login profile for `~/.local/bin`, `RALPH_CLONE`, and `source $RALPH_CLONE/devin/ALIASES.sh`. Re-running does not duplicate the block.
+4. Verifies a fresh shell can resolve `ralph-devin`, `rpd`, and `rpd.p`.
+5. Runs plain `ralph enable` inside each `repos/<app>/` from `project.conf`. It does not pass `--workspace` for app repos and it refuses a workbench-root `.ralph/`.
+6. Appends the Workbench Lite defaults to `project.conf` once.
+
+Verify after setup:
+
+```zsh
+command -v ralph-devin
+command -v rpd
+command -v rpd.p
+grep -n 'WB_LITE_RALPH_AGENT="rpd.p"' project.conf
+find repos -mindepth 2 -maxdepth 2 -name .ralph -type d
+```
+
+Rollback only the shell profile block:
+
+```zsh
+init.wb --lite --undo
+```
+
+If setup fails, the devkit helper prints this remediation string:
+
+```text
+Lite setup incomplete: rpd.p not found. Run devkit doctor or install Ralph, then rerun init.wb --lite.
+```
+
+Run `devkit doctor`, repair the Ralph install, and rerun `init.wb --lite`. For Lite authoring commands after setup, use the ai-workbench `wb.lite` verb docs.
 
 **Preflight** (Step 0 in `init-workbench/init.prompt.md`):
 
