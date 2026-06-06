@@ -35,10 +35,12 @@ Run once per machine. After that, the commands are available from any directory.
 | Command                   | Role      | Default agent                          | Force variants                   |
 | ------------------------- | --------- | -------------------------------------- | -------------------------------- |
 | `init.wb`                 | Initiator | Devin (falls back to Claude)           | `init.wb.dev`, `init.wb.cly`     |
+| `init.wb --lite`          | Initiator | Devin (falls back to Claude)           | `--agent devin\|claude` override |
 | `join.wb <workbench-url>` | Joiner    | Devin (falls back to Claude)           | `join.wb.dev`, `join.wb.cly`     |
 | `update.wb`               | Either    | Devin (only if interactive conflict)   | `update.wb.dev`, `update.wb.cly` |
 | `wb.rescan`               | Either    | Devin (falls back to Claude)           | `--agent devin\|claude` override |
 
+- **Workbench Lite setup** - `init.wb --lite` includes the Lite fast-path bootstrap. It installs `ralph-devin` when missing, writes one idempotent shell profile block for `~/.local/bin` plus the `rpd` / `rpd.p` aliases, runs plain `ralph enable` inside each registered `repos/<app>/`, and seeds Lite defaults into `project.conf`. Undo only the shell profile block with `init.wb --lite --undo`.
 - **Auto-built repo context** — `init.wb` and `join.wb` produce
   `context/<repo>/CONTEXT.md` per registered source repo, plus an
   aggregate `context/README.md` index. Source repos are never mutated
@@ -70,6 +72,22 @@ Typical use: a QA spinning up a workbench for a new epic.
 mkdir ~/workbenches/wb-example && cd ~/workbenches/wb-example
 init.wb
 ```
+
+For the one-app Lite flow, use:
+
+```zsh
+init.wb --lite
+```
+
+After Lite init, verify the machine bootstrap in a fresh shell:
+
+```zsh
+command -v ralph-devin
+command -v rpd
+command -v rpd.p
+```
+
+If shell setup needs to be rolled back, run `init.wb --lite --undo`. If Lite setup stops with `Lite setup incomplete: rpd.p not found. Run devkit doctor or install Ralph, then rerun init.wb --lite.`, run `devkit doctor`, fix the Ralph install, then rerun the same init command. The rest of the Lite flow lives in the ai-workbench `wb.lite` docs.
 
 The agent asks for: label, epics, repos, Figma refs, and MCPs. It creates a private GitHub repo, pushes the workbench, and hands you a share URL for collaborators.
 

@@ -78,7 +78,15 @@ init.wb
 - design references (optional)
 - MCP servers to enable (Atlassian / Figma / none)
 
-Then it creates `${ORG}/workbench-<label>` (legacy workbenches use the older `wb-<label>` prefix and remain fully supported), clones registered code repos into `repos/`, renders `project.conf` + `EPIC-PIPELINE.md`, writes CODEOWNERS, runs `ralph-enable` inside the workbench, commits, pushes.
+Then it creates `${ORG}/workbench-<label>` (legacy workbenches use the older `wb-<label>` prefix and remain fully supported), clones registered code repos into `repos/`, renders `project.conf` + `EPIC-PIPELINE.md`, writes CODEOWNERS, runs Ralph setup, commits, pushes.
+
+For the Lite fast path, run:
+
+```bash
+init.wb --lite
+```
+
+Lite mode also installs `ralph-devin`, exposes `rpd` and `rpd.p` in the zsh login profile, enables Ralph in each `repos/<app>/`, and writes `WB_LITE_*` defaults into `project.conf`. Check it from a fresh shell with `command -v ralph-devin`, `command -v rpd`, and `command -v rpd.p`. To remove only the Lite shell profile block, run `init.wb --lite --undo`.
 
 Output:
 
