@@ -3,6 +3,14 @@
 All notable changes to ai-devkit are documented here. release-please appends entries on every merge to `main` based on Conventional Commit messages.
 
 
+## [1.6.1](https://github.com/amit-t/ai-devkit/compare/v1.6.0...v1.6.1) (2026-06-10)
+
+
+### Bug Fixes
+
+* **release:** run release-please only on origin ([8f78aee](https://github.com/amit-t/ai-devkit/commit/8f78aee716c9ab010d9874ca1469dd0a3c03d34e))
+* **release:** run release-please only on origin ([4c7c9f0](https://github.com/amit-t/ai-devkit/commit/4c7c9f0d3bd178269d3d659a7fea066fc71557bb))
+
 ## [1.6.0](https://github.com/amit-t/ai-devkit/compare/v1.5.0...v1.6.0) (2026-06-06)
 
 
