@@ -38,10 +38,7 @@ Every repo carries a `version.json` at its root. Example:
 Conventional Commit messages (`feat:`, `fix:`, `BREAKING CHANGE:`), so
 the version that ships is the one users actually see.
 
-Release authority is the `amit-t/*` origin repo only. Mirror remotes such
-as `Invenco-Cloud-Systems-ICS/*` do not run release-please. After origin
-opens and merges the release PR, sync that bump commit, tag, and GitHub
-release into each mirror.
+Release authority is the `amit-t/*` origin repo, which runs release-please.
 
 ## The three upgrade commands
 

@@ -4,8 +4,7 @@
 # The Jekyll site under docs/ resolves owner-specific URLs at build time using
 # _data/orgs.yml + _includes/links.html, keyed off site.github.owner_name.
 # This script fails CI if any author re-introduces a hardcoded owner URL into
-# pages or layouts, which would make the published site link to the wrong fork
-# (amit-t vs Invenco-Cloud-Systems-ICS).
+# pages or layouts, which would make the published site link to the wrong owner.
 #
 # Allowed locations for hardcoded owner URLs:
 #   - docs/_data/orgs.yml      (source of truth)
@@ -26,7 +25,7 @@ scan_globs=(
 )
 
 # Owners whose URLs must not be hardcoded outside the allowlist.
-owners_pattern='(amit-t|Invenco-Cloud-Systems-ICS)'
+owners_pattern='(amit-t)'
 
 # URL shapes we treat as hardcoded:
 #   https://github.com/<owner>/...

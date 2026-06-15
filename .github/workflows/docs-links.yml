@@ -51,16 +51,3 @@ jobs:
           grep -q 'github.com/amit-t/ai-ralph' _site_default/index.html
           grep -q 'github.com/amit-t/ai-devkit' _site_default/index.html
           ! grep -q 'links\.' _site_default/index.html
-      - name: Build site as Invenco-Cloud-Systems-ICS publisher
-        env:
-          # Mirrors what GitHub Pages sets for the inv fork at deploy time so
-          # the github-metadata plugin reports the inv owner without any
-          # source-file edit.
-          PAGES_REPO_NWO: Invenco-Cloud-Systems-ICS/ai-devkit
-        run: bundle exec jekyll build --destination _site_inv --strict_front_matter
-      - name: Verify inv owner links resolved
-        run: |
-          set -eu
-          grep -q 'github.com/Invenco-Cloud-Systems-ICS/ai-ralph' _site_inv/index.html
-          grep -q 'github.com/Invenco-Cloud-Systems-ICS/ai-devkit' _site_inv/index.html
-          ! grep -q 'github.com/amit-t/' _site_inv/index.html

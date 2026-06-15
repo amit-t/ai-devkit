@@ -232,9 +232,9 @@ fi
 # Check 4 — DEVKIT_DEFAULT_ENGINE set (WARN-only)
 check4_status=""
 check4_detail=""
-if [[ -n "${DEVKIT_DEFAULT_ENGINE:-}" ]]; then
+if [[ -n "${PER_DEVKIT_DEFAULT_ENGINE:-${DEVKIT_DEFAULT_ENGINE:-}}" ]]; then
   check4_status="OK"
-  check4_detail="${DEVKIT_DEFAULT_ENGINE}"
+  check4_detail="${PER_DEVKIT_DEFAULT_ENGINE:-${DEVKIT_DEFAULT_ENGINE}}"
 else
   check4_status="WARN"
   check4_detail="not set; re-run install.zsh or source ~/.zprofile"
@@ -243,7 +243,7 @@ fi
 # Check 5 — engine available (WARN-only)
 check5_status=""
 check5_detail=""
-engine_name="${DEVKIT_DEFAULT_ENGINE:-claude}"
+engine_name="${PER_DEVKIT_DEFAULT_ENGINE:-${DEVKIT_DEFAULT_ENGINE:-claude}}"
 if (( $+commands[$engine_name] )); then
   check5_status="OK"
   check5_detail="${engine_name} -> ${commands[$engine_name]}"

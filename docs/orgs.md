@@ -13,7 +13,7 @@ subtitle: Machine-local GitHub org list for workbench bootstrap.
 
 The menu shown by `init.wb` Step 0d (and `join.wb` Step 0e) is the union of:
 
-1. **Configured orgs** — lines in `orgs.conf` at the devkit root. Seeded with `Invenco-Cloud-Systems-ICS`.
+1. **Configured orgs** — lines in `orgs.conf` at the devkit root. Empty by default; add orgs with `orgs.wb add <slug>`.
 2. **Auto-detected org** — parsed from `git remote get-url origin` inside the devkit checkout. Always included, never duplicated. Cannot be removed via `orgs.wb remove` (it will reappear).
 3. **Personal** — always the last numbered slot. Picking it prompts for a GitHub handle at runtime.
 
@@ -34,9 +34,8 @@ orgs.wb edit            # open orgs.conf in $EDITOR
 
 ```
 $ orgs.wb show
-  [1] Invenco-Cloud-Systems-ICS
-  [2] amit-t
-  [3] Personal (enter GitHub handle)
+  [1] amit-t
+  [2] Personal (enter GitHub handle)
 
 $ orgs.wb auto
 amit-t
@@ -45,10 +44,9 @@ $ orgs.wb add acme-corp
 added: acme-corp
 
 $ orgs.wb show
-  [1] Invenco-Cloud-Systems-ICS
-  [2] acme-corp
-  [3] amit-t
-  [4] Personal (enter GitHub handle)
+  [1] acme-corp
+  [2] amit-t
+  [3] Personal (enter GitHub handle)
 ```
 
 ## orgs.conf Format
@@ -59,8 +57,6 @@ Plain text, one org slug per line. `#` starts a comment.
 # ai-devkit org list
 # One GitHub org slug per line. `#` starts a comment.
 # The org that hosts this devkit checkout is always included automatically.
-
-Invenco-Cloud-Systems-ICS
 ```
 
 Edit directly or via `orgs.wb add / remove / edit`.

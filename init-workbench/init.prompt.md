@@ -257,7 +257,7 @@ if ! command -v ralph >/dev/null 2>&1; then
   echo "ralph not found on PATH. Installing from ai-ralph..."
   RALPH_SRC="${HOME}/Projects/Tools-Utilities/ai-ralph"
   if [[ ! -d "${RALPH_SRC}" ]]; then
-    git clone https://github.com/Invenco-Cloud-Systems-ICS/ai-ralph.git "${RALPH_SRC}"
+    git clone https://github.com/amit-t/ai-ralph.git "${RALPH_SRC}"
   fi
   bash "${RALPH_SRC}/install.sh"
   command -v ralph >/dev/null 2>&1 || { echo "ralph install failed"; exit 1; }

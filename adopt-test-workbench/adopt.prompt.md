@@ -12,7 +12,7 @@ You are an automation agent with full permissions. Your job is to **adopt an exi
 
 ```
 TEMPLATE_SLUG="ai-automation-workbench"             # the template to adopt onto
-TEMPLATE_ORG="Invenco-Cloud-Systems-ICS"            # default; falls back to repo's own org
+TEMPLATE_ORG="amit-t"            # default; falls back to repo's own org
 TEMPLATE_URL="https://github.com/${TEMPLATE_ORG}/${TEMPLATE_SLUG}"
 DEVKIT_LIB="${DEVKIT_DIR}/lib"
 ```

@@ -129,7 +129,10 @@ _wb_clone_path() {
     wb)     echo ""; return ;;
     *)      echo ""; return ;;
   esac
-  eval "clone=\"\${$var:-}\""
+  # Prefer the PER_-namespaced var (set by `install.zsh --prefix per.`) so a
+  # personal clone resolves its own path even when an unprefixed sibling clone
+  # has exported the bare DEVKIT_CLONE/RALPH_CLONE for itself.
+  eval "clone=\"\${PER_${var}:-\${${var}:-}}\""
   if [[ -n "$clone" ]]; then
     echo "$clone"
     return

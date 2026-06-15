@@ -100,7 +100,7 @@ _resolve_ralph_src() {
   done
 
   candidate="${TOOLS_PARENT}/ai-ralph"
-  local repo_url="${WB_LITE_RALPH_REPO:-https://github.com/Invenco-Cloud-Systems-ICS/ai-ralph.git}"
+  local repo_url="${WB_LITE_RALPH_REPO:-https://github.com/amit-t/ai-ralph.git}"
   print -u2 -r -- "ai-ralph not found locally. Cloning $repo_url -> $candidate"
   git clone "$repo_url" "$candidate"
   print -r -- "${candidate:A}"
