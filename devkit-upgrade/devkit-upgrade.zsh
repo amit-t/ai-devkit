@@ -38,7 +38,7 @@ done
 
 _VERCHECK_LIB_DIR_OVERRIDE="$LIB_DIR" . "${LIB_DIR}/version-check.sh"
 
-CLONE="${DEVKIT_CLONE:-}"
+CLONE="${PER_DEVKIT_CLONE:-${DEVKIT_CLONE:-}}"
 if [[ -z "$CLONE" ]]; then
   CLONE="$(cd "${SCRIPT_DIR}/.." && pwd -P)"
 fi

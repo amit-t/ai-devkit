@@ -26,6 +26,16 @@ The installer:
 
 Run once per machine. After that, the commands are available from any directory.
 
+### Coexisting clones (`--prefix`)
+
+To run a second ai-devkit clone alongside the default one on the same machine, install it with a command-name prefix:
+
+```zsh
+./install.zsh --prefix per.
+```
+
+This installs a fully namespaced family (`per.init.wb`, `per.join.wb`, `per.wb.upgrade`, `per.devkit`, ...) backed by `PER_DEVKIT_CLONE` / `PER_DEVKIT_DEFAULT_ENGINE` in `~/.zprofile` and a `per-wb-versioncheck` state dir, so it never clobbers the unprefixed clone's commands, env, or version-check state. The default (no `--prefix`) install is unchanged.
+
 ---
 
 ## Commands
@@ -212,5 +222,5 @@ In non-interactive mode any prompt accepts the safe default (org slug falls back
 ## Related
 
 - [`ai-workbench`](https://github.com/amit-t/ai-workbench) — planning workbench template (PRDs, eng specs, TDDs).
-- [`ai-test-automation-workbench`](https://github.com/Invenco-Cloud-Systems-ICS/ai-test-automation-workbench) — Playwright test-automation template (POM, lifecycle, Zephyr CSV).
-- [`ai-ralph`](https://github.com/Invenco-Cloud-Systems-ICS/ai-ralph) — autonomous loop runner (used by both workbenches for long-running fix-plan execution).
+- [`ai-test-automation-workbench`](https://github.com/amit-t/ai-test-automation-workbench) — Playwright test-automation template (POM, lifecycle, Zephyr CSV).
+- [`ai-ralph`](https://github.com/amit-t/ai-ralph) — autonomous loop runner (used by both workbenches for long-running fix-plan execution).

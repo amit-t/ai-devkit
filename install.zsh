@@ -5,7 +5,16 @@
 #   orgs.wb                                     (shared org list)
 # All four forms also get .dev (force Devin) and .cly (force Claude) variants.
 #
-# Usage: ./install.zsh [--yes|-y|--non-interactive]
+# Usage: ./install.zsh [--yes|-y|--non-interactive] [--prefix <p>]
+#
+# Command-name prefix (multi-clone coexistence):
+#   --prefix <p>  (or env DEVKIT_CMD_PREFIX) prepends <p> to every installed
+#   command name, alias, and bin symlink, and namespaces the env vars +
+#   version-check state dir so two ai-devkit clones can coexist on one machine
+#   without clobbering each other. Example: `./install.zsh --prefix per.`
+#   installs `per.init.wb`, `per.join.wb`, `per.wb.upgrade`, `per.devkit`, ...
+#   and writes PER_DEVKIT_CLONE / PER_DEVKIT_DEFAULT_ENGINE to ~/.zprofile.
+#   Default (no prefix) is unchanged: init.wb, DEVKIT_CLONE, wb-versioncheck.
 #
 # Non-interactive mode:
 #   Set env DEVKIT_NONINTERACTIVE=1, or pass --yes / -y / --non-interactive.
@@ -20,16 +29,26 @@
 
 set -euo pipefail
 
-# ── Flag parsing (non-interactive support) ──────────────────────────────────
+# ── Flag parsing (non-interactive + command-name prefix) ────────────────────
 DEVKIT_NONINTERACTIVE="${DEVKIT_NONINTERACTIVE:-0}"
+CMD_PREFIX="${DEVKIT_CMD_PREFIX:-}"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --yes|-y|--non-interactive)
       DEVKIT_NONINTERACTIVE=1
       shift
       ;;
+    --prefix)
+      [[ $# -ge 2 ]] || { print -u2 -r -- "--prefix needs a value"; exit 2; }
+      CMD_PREFIX="$2"
+      shift 2
+      ;;
+    --prefix=*)
+      CMD_PREFIX="${1#--prefix=}"
+      shift
+      ;;
     -h|--help)
-      sed -n '2,16p' "$0"
+      sed -n '2,26p' "$0"
       exit 0
       ;;
     *)
@@ -40,6 +59,18 @@ while [[ $# -gt 0 ]]; do
 done
 export DEVKIT_NONINTERACTIVE
 
+# Derived from the prefix:
+#   ENV_NS    env-var namespace, e.g. "per." -> "PER_"  ("" when no prefix)
+#   STATE_TAG version-check state-dir tag, e.g. "per." -> "per-"  ("" when none)
+ENV_NS=""
+STATE_TAG=""
+if [[ -n "$CMD_PREFIX" ]]; then
+  ns_base="${CMD_PREFIX%%.*}"          # "per." -> "per"
+  ns_base="${ns_base//[^A-Za-z0-9]/}"  # strip stray punctuation
+  ENV_NS="$(printf '%s' "$ns_base" | tr '[:lower:]' '[:upper:]')_"   # PER_
+  STATE_TAG="${ns_base:l}-"            # per-
+fi
+
 SCRIPT_DIR="${0:A:h}"
 BIN_DIR="${HOME}/.local/bin"
 mkdir -p "$BIN_DIR"
@@ -48,7 +79,7 @@ ok()   { printf "\033[0;32m[+]\033[0m %s\n" "$*"; }
 warn() { printf "\033[1;33m[!]\033[0m %s\n" "$*"; }
 
 # ── Versioning lib distribution ─────────────────────────────────────────────
-SHARE_DIR="${HOME}/.local/share/wb-versioncheck"
+SHARE_DIR="${HOME}/.local/share/${STATE_TAG}wb-versioncheck"
 mkdir -p "$SHARE_DIR"
 cp "$SCRIPT_DIR/lib/version-check.sh"        "$SHARE_DIR/"
 cp "$SCRIPT_DIR/lib/bootstrap-detection.sh"  "$SHARE_DIR/"
@@ -64,42 +95,44 @@ printf '%s\n' "$SCRIPT_DIR" > "$DEVKIT_CLONE_STATE"
 chmod 0644 "$DEVKIT_CLONE_STATE"
 ok "persisted clone path: $DEVKIT_CLONE_STATE"
 
-# ── DEVKIT_CLONE in .zprofile ──────────────────────────────────────────────
+# ── {ENV_NS}DEVKIT_CLONE in .zprofile ──────────────────────────────────────
 ZPROFILE="${HOME}/.zprofile"
-DEVKIT_LINE="export DEVKIT_CLONE=\"$SCRIPT_DIR\""
+CLONE_VAR="${ENV_NS}DEVKIT_CLONE"
+DEVKIT_LINE="export ${CLONE_VAR}=\"$SCRIPT_DIR\""
 if ! grep -qF "$DEVKIT_LINE" "$ZPROFILE" 2>/dev/null; then
-  # Strip any prior DEVKIT_CLONE assignment so relocating the clone
+  # Strip any prior assignment so relocating the clone
   # does not stack stale lines in ~/.zprofile.
-  if [[ -f "$ZPROFILE" ]] && grep -q '^export DEVKIT_CLONE=' "$ZPROFILE"; then
+  if [[ -f "$ZPROFILE" ]] && grep -q "^export ${CLONE_VAR}=" "$ZPROFILE"; then
     tmp_zp="$(mktemp)"
-    grep -v '^export DEVKIT_CLONE=' "$ZPROFILE" > "$tmp_zp"
+    grep -v "^export ${CLONE_VAR}=" "$ZPROFILE" > "$tmp_zp"
     mv "$tmp_zp" "$ZPROFILE"
   fi
   if ! grep -q "EXTERNAL PROJECT ALIASES" "$ZPROFILE" 2>/dev/null; then
     printf "\n# === EXTERNAL PROJECT ALIASES ===\n" >> "$ZPROFILE"
   fi
   printf "%s\n" "$DEVKIT_LINE" >> "$ZPROFILE"
-  ok "wrote DEVKIT_CLONE to $ZPROFILE"
+  ok "wrote ${CLONE_VAR} to $ZPROFILE"
 fi
 
-# ── DEVKIT_DEFAULT_ENGINE in .zprofile ─────────────────────────────────────
+# ── {ENV_NS}DEVKIT_DEFAULT_ENGINE in .zprofile ─────────────────────────────
 # Prefer devin if it's on PATH (Q9 locked decision), else claude.
 DEFAULT_ENGINE="claude"
 (( $+commands[devin] )) && DEFAULT_ENGINE="devin"
-ENGINE_LINE="export DEVKIT_DEFAULT_ENGINE=\"$DEFAULT_ENGINE\""
+ENGINE_VAR="${ENV_NS}DEVKIT_DEFAULT_ENGINE"
+ENGINE_LINE="export ${ENGINE_VAR}=\"$DEFAULT_ENGINE\""
 if ! grep -qF "$ENGINE_LINE" "$ZPROFILE" 2>/dev/null; then
-  # Strip any prior DEVKIT_DEFAULT_ENGINE assignment so the value
+  # Strip any prior assignment so the value
   # doesn't stack stale lines in ~/.zprofile.
-  if [[ -f "$ZPROFILE" ]] && grep -q '^export DEVKIT_DEFAULT_ENGINE=' "$ZPROFILE"; then
+  if [[ -f "$ZPROFILE" ]] && grep -q "^export ${ENGINE_VAR}=" "$ZPROFILE"; then
     tmp_zp="$(mktemp)"
-    grep -v '^export DEVKIT_DEFAULT_ENGINE=' "$ZPROFILE" > "$tmp_zp"
+    grep -v "^export ${ENGINE_VAR}=" "$ZPROFILE" > "$tmp_zp"
     mv "$tmp_zp" "$ZPROFILE"
   fi
   if ! grep -q "EXTERNAL PROJECT ALIASES" "$ZPROFILE" 2>/dev/null; then
     printf "\n# === EXTERNAL PROJECT ALIASES ===\n" >> "$ZPROFILE"
   fi
   printf "%s\n" "$ENGINE_LINE" >> "$ZPROFILE"
-  ok "wrote DEVKIT_DEFAULT_ENGINE=$DEFAULT_ENGINE to $ZPROFILE"
+  ok "wrote ${ENGINE_VAR}=$DEFAULT_ENGINE to $ZPROFILE"
 fi
 
 # ── Skill symlinks (multi-engine) ──────────────────────────────────────────
@@ -120,6 +153,11 @@ for internal_dir in "${SCRIPT_DIR}/.claude/skills" "${SCRIPT_DIR}/.agents/skills
   ok "linked: $internal_dir/repo-context-scan -> $SKILL_SRC"
 done
 
+# ── Command name templating ─────────────────────────────────────────────────
+# Every installed command/alias/symlink gets $CMD_PREFIX prepended (empty by
+# default). cmd() returns the prefixed name.
+cmd() { printf '%s%s' "$CMD_PREFIX" "$1"; }
+
 install_cmd() {
   local name="$1" target="$2"
   ln -sf "$target" "$BIN_DIR/$name"
@@ -138,16 +176,16 @@ add_alias() {
 }
 
 # ── init.wb ─────────────────────────────────────────────────────────────────
-install_cmd "init.wb"     "$SCRIPT_DIR/init-workbench/init.zsh"
-add_alias "alias init.wb='$SCRIPT_DIR/init-workbench/init.zsh'"        "alias init.wb="
-add_alias "alias init.wb.dev='$SCRIPT_DIR/init-workbench/init.zsh --agent devin'"   "alias init.wb.dev="
-add_alias "alias init.wb.cly='$SCRIPT_DIR/init-workbench/init.zsh --agent claude'"  "alias init.wb.cly="
+install_cmd "$(cmd init.wb)"     "$SCRIPT_DIR/init-workbench/init.zsh"
+add_alias "alias $(cmd init.wb)='$SCRIPT_DIR/init-workbench/init.zsh'"        "alias $(cmd init.wb)="
+add_alias "alias $(cmd init.wb.dev)='$SCRIPT_DIR/init-workbench/init.zsh --agent devin'"   "alias $(cmd init.wb.dev)="
+add_alias "alias $(cmd init.wb.cly)='$SCRIPT_DIR/init-workbench/init.zsh --agent claude'"  "alias $(cmd init.wb.cly)="
 
 # ── join.wb ─────────────────────────────────────────────────────────────────
-install_cmd "join.wb"     "$SCRIPT_DIR/join-workbench/join.zsh"
-add_alias "alias join.wb='$SCRIPT_DIR/join-workbench/join.zsh'"        "alias join.wb="
-add_alias "alias join.wb.dev='$SCRIPT_DIR/join-workbench/join.zsh --agent devin'"   "alias join.wb.dev="
-add_alias "alias join.wb.cly='$SCRIPT_DIR/join-workbench/join.zsh --agent claude'"  "alias join.wb.cly="
+install_cmd "$(cmd join.wb)"     "$SCRIPT_DIR/join-workbench/join.zsh"
+add_alias "alias $(cmd join.wb)='$SCRIPT_DIR/join-workbench/join.zsh'"        "alias $(cmd join.wb)="
+add_alias "alias $(cmd join.wb.dev)='$SCRIPT_DIR/join-workbench/join.zsh --agent devin'"   "alias $(cmd join.wb.dev)="
+add_alias "alias $(cmd join.wb.cly)='$SCRIPT_DIR/join-workbench/join.zsh --agent claude'"  "alias $(cmd join.wb.cly)="
 
 # ── update.wb (deprecated; forwards to wb.upgrade) ─────────────────────────
 # Earlier install.zsh versions installed update.wb as a symlink to
@@ -155,29 +193,29 @@ add_alias "alias join.wb.cly='$SCRIPT_DIR/join-workbench/join.zsh --agent claude
 # symlink and overwrites the *real* update.zsh in the clone — corrupting the
 # tree on every re-install. `rm -f` breaks the symlink first so we always
 # write a fresh regular file.
-DEPRECATED_SHIM="$BIN_DIR/update.wb"
+DEPRECATED_SHIM="$BIN_DIR/$(cmd update.wb)"
 rm -f "$DEPRECATED_SHIM"
 cat > "$DEPRECATED_SHIM" <<SH
 #!/usr/bin/env zsh
-print -u2 -r -- "[deprecated] use 'wb.upgrade'. Forwarding..."
+print -u2 -r -- "[deprecated] use '$(cmd wb.upgrade)'. Forwarding..."
 exec "$SCRIPT_DIR/update-workbench/update.zsh" "\$@"
 SH
 chmod +x "$DEPRECATED_SHIM"
-add_alias "alias update.wb='$BIN_DIR/update.wb'" "alias update.wb="
-ok "installed: update.wb (deprecated shim -> wb.upgrade)"
+add_alias "alias $(cmd update.wb)='$DEPRECATED_SHIM'" "alias $(cmd update.wb)="
+ok "installed: $(cmd update.wb) (deprecated shim -> $(cmd wb.upgrade))"
 
 # ── wb.upgrade (canonical, replaces update.wb) ─────────────────────────────
-install_cmd "wb.upgrade"     "$SCRIPT_DIR/update-workbench/update.zsh"
-add_alias "alias wb.upgrade='$SCRIPT_DIR/update-workbench/update.zsh'"  "alias wb.upgrade="
-add_alias "alias wb.upgrade.dev='$SCRIPT_DIR/update-workbench/update.zsh --agent devin'" "alias wb.upgrade.dev="
-add_alias "alias wb.upgrade.cly='$SCRIPT_DIR/update-workbench/update.zsh --agent claude'" "alias wb.upgrade.cly="
+install_cmd "$(cmd wb.upgrade)"     "$SCRIPT_DIR/update-workbench/update.zsh"
+add_alias "alias $(cmd wb.upgrade)='$SCRIPT_DIR/update-workbench/update.zsh'"  "alias $(cmd wb.upgrade)="
+add_alias "alias $(cmd wb.upgrade.dev)='$SCRIPT_DIR/update-workbench/update.zsh --agent devin'" "alias $(cmd wb.upgrade.dev)="
+add_alias "alias $(cmd wb.upgrade.cly)='$SCRIPT_DIR/update-workbench/update.zsh --agent claude'" "alias $(cmd wb.upgrade.cly)="
 
 # ── devkit.upgrade ──────────────────────────────────────────────────────────
-install_cmd "devkit.upgrade"  "$SCRIPT_DIR/devkit-upgrade/devkit-upgrade.zsh"
-add_alias "alias devkit.upgrade='$SCRIPT_DIR/devkit-upgrade/devkit-upgrade.zsh'" "alias devkit.upgrade="
+install_cmd "$(cmd devkit.upgrade)"  "$SCRIPT_DIR/devkit-upgrade/devkit-upgrade.zsh"
+add_alias "alias $(cmd devkit.upgrade)='$SCRIPT_DIR/devkit-upgrade/devkit-upgrade.zsh'" "alias $(cmd devkit.upgrade)="
 
 # ── devkit doctor ───────────────────────────────────────────────────────────
-DOCTOR_SHIM="$BIN_DIR/devkit"
+DOCTOR_SHIM="$BIN_DIR/$(cmd devkit)"
 cat > "$DOCTOR_SHIM" <<SH
 #!/usr/bin/env zsh
 case "\$1" in
@@ -191,42 +229,42 @@ case "\$1" in
     ;;
   *)
     print -u2 -r -- "Unknown subcommand: \$1"
-    print -u2 -r -- "Usage: devkit doctor [--check-only|--fix]"
-    print -u2 -r -- "       devkit upgrade [--check-only|--yes|--rollback]"
+    print -u2 -r -- "Usage: $(cmd devkit) doctor [--check-only|--fix]"
+    print -u2 -r -- "       $(cmd devkit) upgrade [--check-only|--yes|--rollback]"
     exit 1
     ;;
 esac
 SH
 chmod +x "$DOCTOR_SHIM"
-ok "installed: devkit (subcommand wrapper)"
+ok "installed: $(cmd devkit) (subcommand wrapper)"
 
 # ── init.auto.wb (test-automation workbench) ────────────────────────────────
-install_cmd "init.auto.wb"   "$SCRIPT_DIR/init-test-workbench/init.zsh"
-add_alias "alias init.auto.wb='$SCRIPT_DIR/init-test-workbench/init.zsh'"                 "alias init.auto.wb="
-add_alias "alias init.auto.wb.dev='$SCRIPT_DIR/init-test-workbench/init.zsh --agent devin'"   "alias init.auto.wb.dev="
-add_alias "alias init.auto.wb.cly='$SCRIPT_DIR/init-test-workbench/init.zsh --agent claude'"  "alias init.auto.wb.cly="
+install_cmd "$(cmd init.auto.wb)"   "$SCRIPT_DIR/init-test-workbench/init.zsh"
+add_alias "alias $(cmd init.auto.wb)='$SCRIPT_DIR/init-test-workbench/init.zsh'"                 "alias $(cmd init.auto.wb)="
+add_alias "alias $(cmd init.auto.wb.dev)='$SCRIPT_DIR/init-test-workbench/init.zsh --agent devin'"   "alias $(cmd init.auto.wb.dev)="
+add_alias "alias $(cmd init.auto.wb.cly)='$SCRIPT_DIR/init-test-workbench/init.zsh --agent claude'"  "alias $(cmd init.auto.wb.cly)="
 
 # ── join.auto.wb ────────────────────────────────────────────────────────────
-install_cmd "join.auto.wb"   "$SCRIPT_DIR/join-test-workbench/join.zsh"
-add_alias "alias join.auto.wb='$SCRIPT_DIR/join-test-workbench/join.zsh'"                 "alias join.auto.wb="
-add_alias "alias join.auto.wb.dev='$SCRIPT_DIR/join-test-workbench/join.zsh --agent devin'"   "alias join.auto.wb.dev="
-add_alias "alias join.auto.wb.cly='$SCRIPT_DIR/join-test-workbench/join.zsh --agent claude'"  "alias join.auto.wb.cly="
+install_cmd "$(cmd join.auto.wb)"   "$SCRIPT_DIR/join-test-workbench/join.zsh"
+add_alias "alias $(cmd join.auto.wb)='$SCRIPT_DIR/join-test-workbench/join.zsh'"                 "alias $(cmd join.auto.wb)="
+add_alias "alias $(cmd join.auto.wb.dev)='$SCRIPT_DIR/join-test-workbench/join.zsh --agent devin'"   "alias $(cmd join.auto.wb.dev)="
+add_alias "alias $(cmd join.auto.wb.cly)='$SCRIPT_DIR/join-test-workbench/join.zsh --agent claude'"  "alias $(cmd join.auto.wb.cly)="
 
 # ── update.auto.wb ──────────────────────────────────────────────────────────
-install_cmd "update.auto.wb" "$SCRIPT_DIR/update-test-workbench/update.zsh"
-add_alias "alias update.auto.wb='$SCRIPT_DIR/update-test-workbench/update.zsh'"                "alias update.auto.wb="
-add_alias "alias update.auto.wb.dev='$SCRIPT_DIR/update-test-workbench/update.zsh --agent devin'"  "alias update.auto.wb.dev="
-add_alias "alias update.auto.wb.cly='$SCRIPT_DIR/update-test-workbench/update.zsh --agent claude'" "alias update.auto.wb.cly="
+install_cmd "$(cmd update.auto.wb)" "$SCRIPT_DIR/update-test-workbench/update.zsh"
+add_alias "alias $(cmd update.auto.wb)='$SCRIPT_DIR/update-test-workbench/update.zsh'"                "alias $(cmd update.auto.wb)="
+add_alias "alias $(cmd update.auto.wb.dev)='$SCRIPT_DIR/update-test-workbench/update.zsh --agent devin'"  "alias $(cmd update.auto.wb.dev)="
+add_alias "alias $(cmd update.auto.wb.cly)='$SCRIPT_DIR/update-test-workbench/update.zsh --agent claude'" "alias $(cmd update.auto.wb.cly)="
 
 # ── adopt.auto.wb (archive + recreate branches from template) ───────────────
-install_cmd "adopt.auto.wb"  "$SCRIPT_DIR/adopt-test-workbench/adopt.zsh"
-add_alias "alias adopt.auto.wb='$SCRIPT_DIR/adopt-test-workbench/adopt.zsh'"                "alias adopt.auto.wb="
-add_alias "alias adopt.auto.wb.dev='$SCRIPT_DIR/adopt-test-workbench/adopt.zsh --agent devin'"  "alias adopt.auto.wb.dev="
-add_alias "alias adopt.auto.wb.cly='$SCRIPT_DIR/adopt-test-workbench/adopt.zsh --agent claude'" "alias adopt.auto.wb.cly="
+install_cmd "$(cmd adopt.auto.wb)"  "$SCRIPT_DIR/adopt-test-workbench/adopt.zsh"
+add_alias "alias $(cmd adopt.auto.wb)='$SCRIPT_DIR/adopt-test-workbench/adopt.zsh'"                "alias $(cmd adopt.auto.wb)="
+add_alias "alias $(cmd adopt.auto.wb.dev)='$SCRIPT_DIR/adopt-test-workbench/adopt.zsh --agent devin'"  "alias $(cmd adopt.auto.wb.dev)="
+add_alias "alias $(cmd adopt.auto.wb.cly)='$SCRIPT_DIR/adopt-test-workbench/adopt.zsh --agent claude'" "alias $(cmd adopt.auto.wb.cly)="
 
 # ── orgs.wb ─────────────────────────────────────────────────────────────────
-install_cmd "orgs.wb"     "$SCRIPT_DIR/orgs-workbench/orgs.zsh"
-add_alias "alias orgs.wb='$SCRIPT_DIR/orgs-workbench/orgs.zsh'"        "alias orgs.wb="
+install_cmd "$(cmd orgs.wb)"     "$SCRIPT_DIR/orgs-workbench/orgs.zsh"
+add_alias "alias $(cmd orgs.wb)='$SCRIPT_DIR/orgs-workbench/orgs.zsh'"        "alias $(cmd orgs.wb)="
 
 # ── PATH check ──────────────────────────────────────────────────────────────
 if ! echo "$PATH" | tr ':' '\n' | grep -qx "$BIN_DIR"; then
@@ -240,7 +278,7 @@ fi
 # and should be a deliberate step the user sees during an init flow.
 if (( ! $+commands[ralph] )); then
   warn "ralph is not installed yet"
-  printf "   init.wb / init.auto.wb / join.wb / join.auto.wb will install it from ai-ralph at first run.\n"
+  printf "   $(cmd init.wb) / $(cmd init.auto.wb) / $(cmd join.wb) / $(cmd join.auto.wb) will install it from ai-ralph at first run.\n"
 elif ! ralph --help 2>&1 | grep -q -- '--workspace'; then
   warn "ralph is installed but does not support --workspace mode"
   printf "   Update ai-ralph and re-run its install.sh:\n"
