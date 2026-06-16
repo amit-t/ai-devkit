@@ -36,7 +36,7 @@ for c in git gh rsync python3; do
 done
 ```
 
-### 0b — gh auth + account selection
+### 0b — gh auth (use active account)
 
 ```bash
 gh auth status
@@ -50,44 +50,23 @@ gh auth login
 
 Then re-run `join.wb <url>`.
 
-If authenticated:
+If authenticated, resolve the active account and use it — **do not prompt for or switch accounts**:
 
 ```bash
 GH_USER="$(gh api user -q .login)"
 ```
 
-Show user:
+Tell user (informational only, no confirmation):
 
 ```
 GitHub CLI authenticated as: @${GH_USER}
 Workbench URL: ${WB_URL}
-Join this workbench as @${GH_USER}? [Y/n]
+Joining as @${GH_USER}.
 ```
 
-If **n**:
+`JOINER=${GH_USER}`. Proceed without waiting for input.
 
-1. List known accounts:
-   ```bash
-   gh auth status 2>&1 | grep -E "Logged in to github.com account"
-   ```
-2. Ask:
-   ```
-   Options:
-     [s] Switch to another already-logged-in account
-     [l] Login a new account
-     [q] Quit
-   ```
-3. For `s`: `gh auth switch` interactively. Re-resolve `GH_USER`.
-4. For `l`: `gh auth login`, then `gh auth switch` to the new one. Re-resolve `GH_USER`.
-5. For `q`: exit 0 with message "Aborted. Re-run join.wb when ready."
-
-Re-confirm:
-
-```
-Proceeding as @${GH_USER}. OK? [Y/n]
-```
-
-Loop until confirmed. `JOINER=${GH_USER}`.
+If the user wants a different account, they switch it themselves with `gh auth switch` and re-run `join.wb`.
 
 ### 0c — Repo access check
 
@@ -99,7 +78,7 @@ gh repo view "${WB_URL}" >/dev/null 2>&1 || {
   echo "Either the repo is private and this account lacks access,"
   echo "or the URL is wrong. Fix one of:"
   echo "  - ask initiator to add @${JOINER} as collaborator"
-  echo "  - switch accounts (re-run join.wb and pick a different gh account)"
+  echo "  - switch accounts with 'gh auth switch', then re-run join.wb"
   exit 1
 }
 ```

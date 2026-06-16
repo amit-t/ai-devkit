@@ -36,7 +36,7 @@ for c in git gh rsync python3; do
 done
 ```
 
-### 0b — gh auth + account selection
+### 0b — gh auth (use active account)
 
 ```bash
 gh auth status
@@ -50,43 +50,22 @@ gh auth login
 
 Then re-run `init.wb`.
 
-If authenticated, resolve active account:
+If authenticated, resolve the active account and use it — **do not prompt for or switch accounts**:
 
 ```bash
 GH_USER="$(gh api user -q .login)"
 ```
 
-Show user:
+Tell user (informational only, no confirmation):
 
 ```
 GitHub CLI authenticated as: @${GH_USER}
-Use this account for the new workbench repo? [Y/n]
+Creating the workbench repo as @${GH_USER}.
 ```
 
-If user answers **n**:
+`CREATED_BY=${GH_USER}`. Proceed without waiting for input.
 
-1. List known accounts:
-   ```bash
-   gh auth status 2>&1 | grep -E "Logged in to github.com account"
-   ```
-2. Ask:
-   ```
-   Options:
-     [s] Switch to another already-logged-in account
-     [l] Login a new account
-     [q] Quit
-   ```
-3. For `s`: run `gh auth switch`. Let user pick interactively. Re-resolve `GH_USER`.
-4. For `l`: run `gh auth login`. After success, `gh auth switch` to the new one. Re-resolve `GH_USER`.
-5. For `q`: exit 0 with message "Aborted. Re-run init.wb when ready."
-
-Re-confirm:
-
-```
-Proceeding as @${GH_USER}. OK? [Y/n]
-```
-
-Loop 0b until user confirms. `CREATED_BY=${GH_USER}`.
+If the user wants a different account, they switch it themselves with `gh auth switch` and re-run `init.wb`.
 
 ### 0c — Codeowner note
 
@@ -248,7 +227,7 @@ Run these steps in order. Announce each step as it runs.
 
 ### 3.1 — Pre-flight (already done in Step 0)
 
-Skip — Step 0 covered CLI presence, gh auth, and account selection. `CREATED_BY` is set.
+Skip — Step 0 covered CLI presence and gh auth (active account). `CREATED_BY` is set.
 
 Verify `ralph` is on PATH and supports workspace mode. If missing, install from the local ai-ralph clone (preferred) or from the upstream repo:
 

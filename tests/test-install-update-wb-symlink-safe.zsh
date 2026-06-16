@@ -25,8 +25,9 @@ fake_home="$scratch/home"
 mkdir -p "$fake_home/.local/bin"
 ln -sf "$real_update_zsh" "$fake_home/.local/bin/update.wb"
 
-# Run install.zsh with HOME pointing at the fake tree
-HOME="$fake_home" zsh "${REPO_ROOT}/install.zsh" >/dev/null 2>&1 || true
+# Run install.zsh with HOME pointing at the fake tree.
+# --prefix '' forces unprefixed names; this fork defaults CMD_PREFIX to per.
+HOME="$fake_home" zsh "${REPO_ROOT}/install.zsh" --prefix '' >/dev/null 2>&1 || true
 
 # Real update.zsh must be byte-identical after install
 actual_sha="$(shasum -a 256 "$real_update_zsh" | cut -d' ' -f1)"

@@ -72,7 +72,7 @@ mkdir -p "$fake_home_a"
 
 # Narrow PATH so devin is NOT visible. Keep /usr/bin:/bin for core utils
 # install.zsh relies on (grep, mktemp, mv, cp, mkdir, chmod, ln, printf).
-HOME="$fake_home_a" PATH="/usr/bin:/bin" zsh "$fake_devkit/install.zsh" >/dev/null
+HOME="$fake_home_a" PATH="/usr/bin:/bin" zsh "$fake_devkit/install.zsh" --prefix '' >/dev/null
 
 skill_src="$fake_devkit/skills/repo-context-scan"
 
@@ -114,7 +114,7 @@ fi
 print -r -- "PASS: ~/.zprofile contains DEVKIT_DEFAULT_ENGINE=claude (no devin on PATH)"
 
 # ── Sub-test B: idempotency — re-run, no duplicate env lines ────────────────
-HOME="$fake_home_a" PATH="/usr/bin:/bin" zsh "$fake_devkit/install.zsh" >/dev/null
+HOME="$fake_home_a" PATH="/usr/bin:/bin" zsh "$fake_devkit/install.zsh" --prefix '' >/dev/null
 
 clone_count="$(grep -c '^export DEVKIT_CLONE=' "$zprofile_a" || true)"
 engine_count="$(grep -c '^export DEVKIT_DEFAULT_ENGINE=' "$zprofile_a" || true)"
@@ -138,7 +138,7 @@ print -r -- '#!/usr/bin/env zsh' > "$shim_bin/devin"
 print -r -- 'exit 0'              >> "$shim_bin/devin"
 chmod +x "$shim_bin/devin"
 
-HOME="$fake_home_b" PATH="$shim_bin:/usr/bin:/bin" zsh "$fake_devkit/install.zsh" >/dev/null
+HOME="$fake_home_b" PATH="$shim_bin:/usr/bin:/bin" zsh "$fake_devkit/install.zsh" --prefix '' >/dev/null
 
 zprofile_b="$fake_home_b/.zprofile"
 if ! grep -qFx 'export DEVKIT_DEFAULT_ENGINE="devin"' "$zprofile_b"; then
@@ -156,7 +156,7 @@ mkdir -p "$fake_home_c"
 print -r -- '# === EXTERNAL PROJECT ALIASES ===' > "$fake_home_c/.zprofile"
 print -r -- 'export DEVKIT_DEFAULT_ENGINE="stale"' >> "$fake_home_c/.zprofile"
 
-HOME="$fake_home_c" PATH="/usr/bin:/bin" zsh "$fake_devkit/install.zsh" >/dev/null
+HOME="$fake_home_c" PATH="/usr/bin:/bin" zsh "$fake_devkit/install.zsh" --prefix '' >/dev/null
 
 # grep -c exits 1 when matches=0; trailing || true keeps set -e happy.
 stale_count="$(grep -c '^export DEVKIT_DEFAULT_ENGINE="stale"' "$fake_home_c/.zprofile" || true)"
