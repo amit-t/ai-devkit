@@ -27,13 +27,13 @@ GH_USER="$(gh api user -q .login)"
 
 If not authenticated: stop and instruct `gh auth login`, then re-run `join.auto.wb`.
 
-If authenticated, confirm:
+If authenticated, use the active account — **do not prompt for or switch accounts**:
 
 ```
-GitHub CLI authenticated as: @${GH_USER}. Use this account to join? [Y/n]
+GitHub CLI authenticated as: @${GH_USER}. Joining as @${GH_USER}.
 ```
 
-If **n**, run `gh auth switch` (or `gh auth login`) and resolve a new `GH_USER`. Loop until confirmed.
+Proceed without waiting for input. To use a different account, the user runs `gh auth switch` themselves and re-runs `join.auto.wb`.
 
 ### 0c — Validate URL
 

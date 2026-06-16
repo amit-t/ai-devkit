@@ -31,7 +31,7 @@ for c in git gh rsync python3 node; do
 done
 ```
 
-### 0b — gh auth + account selection
+### 0b — gh auth (use active account)
 
 ```bash
 gh auth status
@@ -45,20 +45,20 @@ gh auth login
 
 Then re-run `init.auto.wb`.
 
-If authenticated:
+If authenticated, resolve the active account and use it — **do not prompt for or switch accounts**:
 
 ```bash
 GH_USER="$(gh api user -q .login)"
 ```
 
-Show user:
+Tell user (informational only, no confirmation):
 
 ```
 GitHub CLI authenticated as: @${GH_USER}
-Use this account for the new test-automation repo? [Y/n]
+Creating the test-automation repo as @${GH_USER}.
 ```
 
-If user answers **n**, walk through `gh auth switch` / `gh auth login` as needed; loop until they confirm. Set `CREATED_BY=${GH_USER}`.
+Set `CREATED_BY=${GH_USER}` and proceed without waiting for input. To use a different account, the user runs `gh auth switch` themselves and re-runs `init.auto.wb`.
 
 ### 0c — Codeowner note
 
