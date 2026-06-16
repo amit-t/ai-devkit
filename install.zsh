@@ -14,7 +14,8 @@
 #   without clobbering each other. Example: `./install.zsh --prefix per.`
 #   installs `per.init.wb`, `per.join.wb`, `per.wb.upgrade`, `per.devkit`, ...
 #   and writes PER_DEVKIT_CLONE / PER_DEVKIT_DEFAULT_ENGINE to ~/.zprofile.
-#   Default (no prefix) is unchanged: init.wb, DEVKIT_CLONE, wb-versioncheck.
+#   This personal fork DEFAULTS the prefix to `per.` so it never clobbers a
+#   company clone's bare init.wb/join.wb. Pass `--prefix ''` for no prefix.
 #
 # Non-interactive mode:
 #   Set env DEVKIT_NONINTERACTIVE=1, or pass --yes / -y / --non-interactive.
@@ -31,7 +32,10 @@ set -euo pipefail
 
 # ── Flag parsing (non-interactive + command-name prefix) ────────────────────
 DEVKIT_NONINTERACTIVE="${DEVKIT_NONINTERACTIVE:-0}"
-CMD_PREFIX="${DEVKIT_CMD_PREFIX:-}"
+# This personal fork defaults to the `per.` prefix so it never clobbers a
+# company clone's bare init.wb/join.wb commands. Override with env
+# DEVKIT_CMD_PREFIX or --prefix (pass `--prefix ''` for no prefix).
+CMD_PREFIX="${DEVKIT_CMD_PREFIX:-per.}"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --yes|-y|--non-interactive)
