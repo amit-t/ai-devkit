@@ -46,6 +46,8 @@ cp "$REAL_INSTALL" "$fake_devkit/install.zsh"
 # install.zsh distributes these two lib files into ~/.local/share/wb-versioncheck.
 cp "${REPO_ROOT}/lib/version-check.sh"       "$fake_devkit/lib/version-check.sh"
 cp "${REPO_ROOT}/lib/bootstrap-detection.sh" "$fake_devkit/lib/bootstrap-detection.sh"
+# install.zsh sources the ralph command resolver near the top.
+cp "${REPO_ROOT}/lib/ralph-cmd.zsh"          "$fake_devkit/lib/ralph-cmd.zsh"
 
 # Stub minimal entry-point zsh files. install.zsh chmods +x these.
 print -r -- '#!/usr/bin/env zsh' > "$fake_devkit/init-workbench/init.zsh"

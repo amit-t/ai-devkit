@@ -84,8 +84,12 @@ rpd.p() { ralph-devin --parallel "${1:?Usage: rpd.p <N> [M]}" ${2:+"$2"}; }
 ALIASES
 
 # RED target: Lite bootstrap script does machine install, PATH/aliases, per-app enable, and config seed.
+# This fixture installs the unprefixed `ralph`/`ralph-devin`, so force the
+# unprefixed command family (explicit empty prefix overrides the .ralph-prefix
+# marker that this personal fork commits).
 HOME="$fake_home" \
 PATH="/usr/bin:/bin" \
+RALPH_CMD_PREFIX="" \
 WB_LITE_RALPH_SRC="$fake_ralph" \
 WB_LITE_PROFILE="$fake_home/.zprofile" \
 WB_LITE_RALPH_LOG="$log" \
@@ -129,6 +133,7 @@ pass "project.conf includes exact Lite defaults"
 
 HOME="$fake_home" \
 PATH="/usr/bin:/bin" \
+RALPH_CMD_PREFIX="" \
 WB_LITE_RALPH_SRC="$fake_ralph" \
 WB_LITE_PROFILE="$fake_home/.zprofile" \
 WB_LITE_RALPH_LOG="$log" \

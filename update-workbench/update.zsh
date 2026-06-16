@@ -29,6 +29,11 @@ fi
 SCRIPT_DIR="${0:A:h}"
 PROMPT_FILE="${SCRIPT_DIR}/update.prompt.md"
 
+# Resolve the ralph command family (marker-driven; see lib/ralph-cmd.zsh).
+# Sets RALPH_PREFIX / RALPH_BIN / RALPH_CLONE_DIR in this scope. The lib lives
+# at the devkit root (parent of this script's dir).
+RALPH_CMD_LIB_ROOT="${SCRIPT_DIR:h}" source "${SCRIPT_DIR:h}/lib/ralph-cmd.zsh"
+
 DRY_RUN=false
 AGENT=""
 
@@ -218,13 +223,13 @@ printf "  upstream sha: %s\n  paths updated: %d\n" "$UPSTREAM_SHA" "${#UPDATED[@
 
 if [[ -d "${WB_DIR}/repos" ]]; then
   if [[ ! -d "${WB_DIR}/repos/.ralph" ]] || ! grep -q '^WORKSPACE_MODE=true' "${WB_DIR}/repos/.ralphrc" 2>/dev/null; then
-    if (( $+commands[ralph] )); then
-      if ralph --help 2>&1 | grep -q -- '--workspace'; then
+    if command -v "$RALPH_BIN" >/dev/null 2>&1; then
+      if "$RALPH_BIN" --help 2>&1 | grep -q -- '--workspace'; then
         echo ""
         echo "── Ralph workspace migration ──"
         echo "  ${WB_DIR}/repos/.ralph/ is missing or .ralphrc lacks WORKSPACE_MODE=true."
-        echo "  Running: (cd ${WB_DIR}/repos && ralph enable --workspace --non-interactive --skip-tasks)"
-        (cd "${WB_DIR}/repos" && ralph enable --workspace --non-interactive --skip-tasks)
+        echo "  Running: (cd ${WB_DIR}/repos && $RALPH_BIN enable --workspace --non-interactive --skip-tasks)"
+        (cd "${WB_DIR}/repos" && "$RALPH_BIN" enable --workspace --non-interactive --skip-tasks)
         if grep -q '^WORKSPACE_MODE=true' "${WB_DIR}/repos/.ralphrc" 2>/dev/null; then
           echo "  ralph workspace enabled at ${WB_DIR}/repos/.ralph/"
           if [[ -x "${WB_DIR}/scripts/ralph-enable-check.sh" ]]; then
