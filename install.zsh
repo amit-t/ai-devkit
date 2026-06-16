@@ -79,6 +79,10 @@ SCRIPT_DIR="${0:A:h}"
 BIN_DIR="${HOME}/.local/bin"
 mkdir -p "$BIN_DIR"
 
+# Resolve the ralph command family (marker-driven; see lib/ralph-cmd.zsh).
+# Sets RALPH_PREFIX / RALPH_BIN / RALPH_CLONE_DIR in this scope.
+RALPH_CMD_LIB_ROOT="$SCRIPT_DIR" source "$SCRIPT_DIR/lib/ralph-cmd.zsh"
+
 ok()   { printf "\033[0;32m[+]\033[0m %s\n" "$*"; }
 warn() { printf "\033[1;33m[!]\033[0m %s\n" "$*"; }
 
@@ -280,11 +284,11 @@ fi
 # init.* / join.* install ralph on demand. We just warn here so users see it
 # now rather than later. Do NOT auto-install: ralph install touches ~/.ralph/
 # and should be a deliberate step the user sees during an init flow.
-if (( ! $+commands[ralph] )); then
-  warn "ralph is not installed yet"
+if ! command -v "$RALPH_BIN" >/dev/null 2>&1; then
+  warn "$RALPH_BIN is not installed yet"
   printf "   $(cmd init.wb) / $(cmd init.auto.wb) / $(cmd join.wb) / $(cmd join.auto.wb) will install it from ai-ralph at first run.\n"
-elif ! ralph --help 2>&1 | grep -q -- '--workspace'; then
-  warn "ralph is installed but does not support --workspace mode"
+elif ! "$RALPH_BIN" --help 2>&1 | grep -q -- '--workspace'; then
+  warn "$RALPH_BIN is installed but does not support --workspace mode"
   printf "   Update ai-ralph and re-run its install.sh:\n"
   printf "     cd \$HOME/Projects/Tools-Utilities/ai-ralph && git pull && bash install.sh\n"
 fi

@@ -8,6 +8,10 @@ SCRIPT_DIR="${script_path:h}"
 DEVKIT_DIR="${SCRIPT_DIR:h}"
 TOOLS_PARENT="${DEVKIT_DIR:h}"
 
+# Resolve the ralph command family (marker-driven; see lib/ralph-cmd.zsh).
+# Sets RALPH_PREFIX / RALPH_BIN / RALPH_CLONE_DIR in this scope.
+RALPH_CMD_LIB_ROOT="$DEVKIT_DIR" source "$DEVKIT_DIR/lib/ralph-cmd.zsh"
+
 MARKER_START="# >>> ai-devkit workbench-lite >>>"
 MARKER_END="# <<< ai-devkit workbench-lite <<<"
 REMEDIATION='Lite setup incomplete: rpd.p not found. Run devkit doctor or install Ralph, then rerun init.wb --lite.'
@@ -62,9 +66,10 @@ _write_lite_profile_block() {
     print -r -- "$MARKER_START"
     print -r -- '# Workbench Lite: Ralph Devin engine + rpd/rpd.p aliases.'
     print -r -- 'export PATH="$HOME/.local/bin:$PATH"'
-    print -r -- "export RALPH_CLONE=\"$ralph_src\""
-    print -r -- 'if [[ -f "$RALPH_CLONE/devin/ALIASES.sh" ]]; then'
-    print -r -- '  source "$RALPH_CLONE/devin/ALIASES.sh"'
+    print -r -- "export RALPH_CLONE_DIR=\"$ralph_src\""
+    print -r -- "export RALPH_CMD_PREFIX=\"$RALPH_PREFIX\""
+    print -r -- 'if [[ -f "$RALPH_CLONE_DIR/devin/ALIASES.sh" ]]; then'
+    print -r -- '  RALPH_CMD_PREFIX="$RALPH_CMD_PREFIX" source "$RALPH_CLONE_DIR/devin/ALIASES.sh"'
     print -r -- 'fi'
     print -r -- "$MARKER_END"
   } > "$profile"
@@ -93,6 +98,7 @@ _resolve_ralph_src() {
   local candidate
   for candidate in \
     "${WB_LITE_RALPH_SRC:-}" \
+    "${RALPH_CLONE_DIR:-}" \
     "${RALPH_CLONE:-}" \
     "${TOOLS_PARENT}/ai-ralph" \
     "${HOME}/Projects/Tools-Utilities/ai-ralph"; do
@@ -108,7 +114,7 @@ _resolve_ralph_src() {
 
 _install_ralph_if_needed() {
   local ralph_src="$1"
-  if ! command -v ralph >/dev/null 2>&1; then
+  if ! command -v "$RALPH_BIN" >/dev/null 2>&1; then
     [[ -x "$ralph_src/install.sh" || -f "$ralph_src/install.sh" ]] || {
       print -u2 -r -- "ai-ralph install.sh not found at $ralph_src/install.sh"
       return 1
@@ -117,12 +123,12 @@ _install_ralph_if_needed() {
     (cd "$ralph_src" && bash ./install.sh)
     _add_local_bin_to_current_path
   fi
-  command -v ralph >/dev/null 2>&1 || { print -u2 -r -- "ralph install failed"; return 1; }
+  command -v "$RALPH_BIN" >/dev/null 2>&1 || { print -u2 -r -- "$RALPH_BIN install failed"; return 1; }
 }
 
 _install_ralph_devin_if_needed() {
   local ralph_src="$1"
-  if ! command -v ralph-devin >/dev/null 2>&1; then
+  if ! command -v "${RALPH_BIN}-devin" >/dev/null 2>&1; then
     [[ -x "$ralph_src/devin/install_devin.sh" || -f "$ralph_src/devin/install_devin.sh" ]] || {
       print -u2 -r -- "Ralph Devin installer not found at $ralph_src/devin/install_devin.sh"
       return 1
@@ -131,13 +137,13 @@ _install_ralph_devin_if_needed() {
     (cd "$ralph_src" && bash ./devin/install_devin.sh)
     _add_local_bin_to_current_path
   fi
-  command -v ralph-devin >/dev/null 2>&1 || { print -u2 -r -- "ralph-devin install failed"; return 1; }
+  command -v "${RALPH_BIN}-devin" >/dev/null 2>&1 || { print -u2 -r -- "${RALPH_BIN}-devin install failed"; return 1; }
 }
 
 _verify_lite_aliases() {
   local profile="$PROFILE_FILE"
-  HOME="$HOME" zsh -l -c "source ${(q)profile}; command -v ralph-devin >/dev/null && command -v rpd >/dev/null && command -v rpd.p >/dev/null" >/dev/null 2>&1 || {
-    print -u2 -r -- "rpd.p not found after sourcing $profile"
+  HOME="$HOME" zsh -l -c "source ${(q)profile}; command -v ${(q)RALPH_PREFIX}ralph-devin >/dev/null && command -v ${(q)RALPH_PREFIX}rpd >/dev/null && command -v ${(q)RALPH_PREFIX}rpd.p >/dev/null" >/dev/null 2>&1 || {
+    print -u2 -r -- "${RALPH_PREFIX}rpd.p not found after sourcing $profile"
     return 1
   }
 }
@@ -204,17 +210,17 @@ _enable_lite_repo() {
   enable_out="$(mktemp -t wb-lite-ralph-enable.out.XXXXXX)"
   enable_err="$(mktemp -t wb-lite-ralph-enable.err.XXXXXX)"
 
-  if (cd "$repo_dir" && ralph enable >"$enable_out" 2>"$enable_err"); then
+  if (cd "$repo_dir" && "$RALPH_BIN" enable >"$enable_out" 2>"$enable_err"); then
     cat "$enable_out"
     cat "$enable_err" >&2
     rm -f -- "$enable_out" "$enable_err"
     return 0
   fi
 
-  if command -v ralph-enable >/dev/null 2>&1; then
+  if command -v "${RALPH_BIN}-enable" >/dev/null 2>&1; then
     rm -f -- "$enable_out" "$enable_err"
-    print -u2 -r -- "ralph enable failed in $repo_dir; retrying legacy ralph-enable --non-interactive"
-    (cd "$repo_dir" && ralph-enable --non-interactive)
+    print -u2 -r -- "$RALPH_BIN enable failed in $repo_dir; retrying legacy ${RALPH_BIN}-enable --non-interactive"
+    (cd "$repo_dir" && "${RALPH_BIN}-enable" --non-interactive)
     return $?
   fi
 
