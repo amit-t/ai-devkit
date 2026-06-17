@@ -137,10 +137,27 @@ echo "Fetching upstream..."
 git fetch upstream main --quiet || { echo "fetch failed" >&2; exit 3; }
 
 # ── Read template_owned from manifest ────────────────────────────────────────
-TEMPLATE_PATHS="$(python3 - <<'PYEOF'
-import json
-with open('.workbench-manifest.json') as f: m = json.load(f)
-for p in m.get('template_owned', []):
+# Read the manifest from upstream/main, not the local working tree. The local
+# copy is the stamped wb's stale snapshot; using it means any path newly added
+# to template_owned upstream is always one upgrade behind (the run that pulls
+# the new manifest does not yet act on its new entries). Reading upstream makes
+# additions take effect on the first upgrade. Falls back to the local manifest
+# if the upstream blob cannot be read.
+UPSTREAM_MANIFEST="$(git show upstream/main:.workbench-manifest.json 2>/dev/null || true)"
+TEMPLATE_PATHS="$(MANIFEST_JSON="$UPSTREAM_MANIFEST" python3 - <<'PYEOF'
+import json, os, pathlib
+raw = os.environ.get("MANIFEST_JSON", "")
+m = None
+if raw.strip():
+    try:
+        m = json.loads(raw)
+    except Exception:
+        m = None
+if m is None:
+    # Upstream blob unavailable (older template, shallow fetch) — fall back to
+    # the local working-tree manifest.
+    m = json.loads(pathlib.Path(".workbench-manifest.json").read_text())
+for p in m.get("template_owned", []):
     print(p)
 PYEOF
 )"
