@@ -34,7 +34,7 @@ To run a second ai-devkit clone alongside the default one on the same machine, i
 ./install.zsh --prefix per.
 ```
 
-This installs a fully namespaced family (`per.init.wb`, `per.join.wb`, `per.wb.upgrade`, `per.devkit`, ...) backed by `PER_DEVKIT_CLONE` / `PER_DEVKIT_DEFAULT_ENGINE` in `~/.zprofile` and a `per-wb-versioncheck` state dir, so it never clobbers the unprefixed clone's commands, env, or version-check state. The default (no `--prefix`) install is unchanged.
+This installs a fully namespaced family (`per.init.wb`, `per.join.wb`, `per.wb.upgrade`, `per.devkit`, ...) backed by `PER_DEVKIT_CLONE` / `PER_DEVKIT_DEFAULT_ENGINE` / `PER_DEVKIT_CLAUDE_CMD` in `~/.zprofile` and a `per-wb-versioncheck` state dir, so it never clobbers the unprefixed clone's commands, env, or version-check state. The default (no `--prefix`) install is unchanged.
 
 ---
 
@@ -44,12 +44,13 @@ This installs a fully namespaced family (`per.init.wb`, `per.join.wb`, `per.wb.u
 
 | Command                   | Role      | Default agent                          | Force variants                   |
 | ------------------------- | --------- | -------------------------------------- | -------------------------------- |
-| `init.wb`                 | Initiator | Devin (falls back to Claude)           | `init.wb.dev`, `init.wb.cly`     |
-| `init.wb --lite`          | Initiator | Devin (falls back to Claude)           | `--agent devin\|claude` override |
-| `join.wb <workbench-url>` | Joiner    | Devin (falls back to Claude)           | `join.wb.dev`, `join.wb.cly`     |
-| `update.wb`               | Either    | Devin (only if interactive conflict)   | `update.wb.dev`, `update.wb.cly` |
-| `wb.rescan`               | Either    | Devin (falls back to Claude)           | `--agent devin\|claude` override |
+| `init.wb`                 | Initiator | Claude (via `clscb`)           | `init.wb.dev`, `init.wb.cly`     |
+| `init.wb --lite`          | Initiator | Claude (via `clscb`)           | `--agent devin\|claude` override |
+| `join.wb <workbench-url>` | Joiner    | Claude (via `clscb`)           | `join.wb.dev`, `join.wb.cly`     |
+| `update.wb`               | Either    | Claude via `clscb` (interactive conflict)   | `update.wb.dev`, `update.wb.cly` |
+| `wb.rescan`               | Either    | Claude (via `clscb`)           | `--agent devin\|claude` override |
 
+- **Default engine (personal fork)** — this `per.`-prefixed fork makes **Claude** the default engine and launches it through `clscb` (cly + precision + superpowers + caveman + boil). The behavior is gated by the committed `.ralph-prefix` marker, so an unmarked twin fork keeps the legacy `devin`-then-`claude` default and bare `claude` launch. Override per-run with `--agent devin|claude`; override the launcher/default globally with `PER_DEVKIT_CLAUDE_CMD` / `PER_DEVKIT_DEFAULT_ENGINE` in `~/.zprofile`. See [`lib/engine-cmd.zsh`](lib/engine-cmd.zsh).
 - **Workbench Lite setup** - `init.wb --lite` includes the Lite fast-path bootstrap. It installs `ralph-devin` when missing, writes one idempotent shell profile block for `~/.local/bin` plus the `rpd` / `rpd.p` aliases, runs plain `ralph enable` inside each registered `repos/<app>/`, and seeds Lite defaults into `project.conf`. Undo only the shell profile block with `init.wb --lite --undo`.
 - **Auto-built repo context** — `init.wb` and `join.wb` produce
   `context/<repo>/CONTEXT.md` per registered source repo, plus an
@@ -62,10 +63,10 @@ This installs a fully namespaced family (`per.init.wb`, `per.join.wb`, `per.wb.u
 
 | Command                          | Role      | Default agent                          | Force variants                              |
 | -------------------------------- | --------- | -------------------------------------- | ------------------------------------------- |
-| `init.auto.wb`                   | Initiator | Devin (falls back to Claude)           | `init.auto.wb.dev`, `init.auto.wb.cly`     |
-| `join.auto.wb <workbench-url>`   | Joiner    | Devin (falls back to Claude)           | `join.auto.wb.dev`, `join.auto.wb.cly`     |
-| `update.auto.wb`                 | Either    | Devin (only if interactive conflict)   | `update.auto.wb.dev`, `update.auto.wb.cly` |
-| `adopt.auto.wb <repo-url>`       | Initiator | Devin (falls back to Claude)           | `adopt.auto.wb.dev`, `adopt.auto.wb.cly`   |
+| `init.auto.wb`                   | Initiator | Claude (via `clscb`)           | `init.auto.wb.dev`, `init.auto.wb.cly`     |
+| `join.auto.wb <workbench-url>`   | Joiner    | Claude (via `clscb`)           | `join.auto.wb.dev`, `join.auto.wb.cly`     |
+| `update.auto.wb`                 | Either    | Claude via `clscb` (interactive conflict)   | `update.auto.wb.dev`, `update.auto.wb.cly` |
+| `adopt.auto.wb <repo-url>`       | Initiator | Claude (via `clscb`)           | `adopt.auto.wb.dev`, `adopt.auto.wb.cly`   |
 
 All commands launch the configured agent with a role-specific prompt. The agent handles the interview, repo creation, templating, and git operations; the shell scripts are thin launchers.
 

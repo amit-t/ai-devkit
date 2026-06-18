@@ -13,7 +13,9 @@
 #   version-check state dir so two ai-devkit clones can coexist on one machine
 #   without clobbering each other. Example: `./install.zsh --prefix per.`
 #   installs `per.init.wb`, `per.join.wb`, `per.wb.upgrade`, `per.devkit`, ...
-#   and writes PER_DEVKIT_CLONE / PER_DEVKIT_DEFAULT_ENGINE to ~/.zprofile.
+#   and writes PER_DEVKIT_CLONE / PER_DEVKIT_DEFAULT_ENGINE /
+#   PER_DEVKIT_CLAUDE_CMD to ~/.zprofile. On this personal fork the default
+#   engine is Claude, launched through `clscb` (see lib/engine-cmd.zsh).
 #   This personal fork DEFAULTS the prefix to `per.` so it never clobbers a
 #   company clone's bare init.wb/join.wb. Pass `--prefix ''` for no prefix.
 #
@@ -122,26 +124,38 @@ if ! grep -qF "$DEVKIT_LINE" "$ZPROFILE" 2>/dev/null; then
   ok "wrote ${CLONE_VAR} to $ZPROFILE"
 fi
 
-# ── {ENV_NS}DEVKIT_DEFAULT_ENGINE in .zprofile ─────────────────────────────
-# Prefer devin if it's on PATH (Q9 locked decision), else claude.
-DEFAULT_ENGINE="claude"
-(( $+commands[devin] )) && DEFAULT_ENGINE="devin"
-ENGINE_VAR="${ENV_NS}DEVKIT_DEFAULT_ENGINE"
-ENGINE_LINE="export ${ENGINE_VAR}=\"$DEFAULT_ENGINE\""
-if ! grep -qF "$ENGINE_LINE" "$ZPROFILE" 2>/dev/null; then
-  # Strip any prior assignment so the value
-  # doesn't stack stale lines in ~/.zprofile.
-  if [[ -f "$ZPROFILE" ]] && grep -q "^export ${ENGINE_VAR}=" "$ZPROFILE"; then
+# ── Engine defaults in .zprofile ────────────────────────────────────────────
+# Idempotently upsert `export VAR="VALUE"` into ~/.zprofile (strips any prior
+# assignment so values don't stack across re-installs).
+upsert_zprofile_export() {
+  local var="$1" value="$2" line="export $1=\"$2\""
+  grep -qF "$line" "$ZPROFILE" 2>/dev/null && return 0
+  if [[ -f "$ZPROFILE" ]] && grep -q "^export ${var}=" "$ZPROFILE"; then
     tmp_zp="$(mktemp)"
-    grep -v "^export ${ENGINE_VAR}=" "$ZPROFILE" > "$tmp_zp"
+    grep -v "^export ${var}=" "$ZPROFILE" > "$tmp_zp"
     mv "$tmp_zp" "$ZPROFILE"
   fi
   if ! grep -q "EXTERNAL PROJECT ALIASES" "$ZPROFILE" 2>/dev/null; then
     printf "\n# === EXTERNAL PROJECT ALIASES ===\n" >> "$ZPROFILE"
   fi
-  printf "%s\n" "$ENGINE_LINE" >> "$ZPROFILE"
-  ok "wrote ${ENGINE_VAR}=$DEFAULT_ENGINE to $ZPROFILE"
+  printf "%s\n" "$line" >> "$ZPROFILE"
+  ok "wrote ${var}=${value} to $ZPROFILE"
+}
+
+# This personal (prefixed) fork makes Claude the default engine, launched
+# through the user's `clscb` wrapper (cly + precision + superpowers + caveman +
+# boil). An unprefixed/twin install keeps the legacy preference: devin if it's
+# on PATH (Q9 locked decision), else claude, launched as bare `claude`.
+if [[ -n "$CMD_PREFIX" ]]; then
+  DEFAULT_ENGINE="claude"
+  DEFAULT_CLAUDE_CMD="clscb"
+else
+  DEFAULT_ENGINE="claude"
+  (( $+commands[devin] )) && DEFAULT_ENGINE="devin"
+  DEFAULT_CLAUDE_CMD="claude"
 fi
+upsert_zprofile_export "${ENV_NS}DEVKIT_DEFAULT_ENGINE" "$DEFAULT_ENGINE"
+upsert_zprofile_export "${ENV_NS}DEVKIT_CLAUDE_CMD"      "$DEFAULT_CLAUDE_CMD"
 
 # ── Skill symlinks (multi-engine) ──────────────────────────────────────────
 # Vendored skill source lives in the devkit clone. We expose it to each

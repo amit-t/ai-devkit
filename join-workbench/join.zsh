@@ -45,12 +45,9 @@ done
 [[ -n "$WB_URL" ]] || { echo "Usage: join.wb <workbench-url>" >&2; exit 1; }
 [[ -f "$PROMPT_FILE" ]] || { echo "join.prompt.md not found at $PROMPT_FILE" >&2; exit 1; }
 
-# Pick agent
-if [[ -z "$AGENT" ]]; then
-  if command -v devin >/dev/null 2>&1; then AGENT="devin"
-  elif command -v claude >/dev/null 2>&1; then AGENT="claude"
-  else echo "Neither devin nor claude CLI found." >&2; exit 1; fi
-fi
+# Pick agent (marker-driven default; see lib/engine-cmd.zsh)
+source "${SCRIPT_DIR:h}/lib/engine-cmd.zsh"
+if [[ -z "$AGENT" ]]; then AGENT="$DEVKIT_DEFAULT_AGENT"; fi
 
 DEVKIT_DIR="$(dirname "$SCRIPT_DIR")"
 TOOLS_PARENT="$(dirname "$DEVKIT_DIR")"
@@ -76,8 +73,7 @@ case "$AGENT" in
     rm -f "$PROMPT_TMP"
     ;;
   claude)
-    unset CLAUDECODE
-    claude --dangerously-skip-permissions "$FULL_PROMPT"
+    devkit_fire_claude "$FULL_PROMPT"
     ;;
   *) echo "Invalid agent: $AGENT" >&2; exit 1 ;;
 esac
