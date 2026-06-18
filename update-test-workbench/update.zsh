@@ -159,6 +159,9 @@ fi
 
 # ── Optional agent-driven preview ────────────────────────────────────────────
 if [[ -n "$AGENT" ]] && [[ -f "$PROMPT_FILE" ]]; then
+  # Marker-driven Claude launcher (see lib/engine-cmd.zsh): personal fork routes
+  # Claude through clscb; unmarked twin keeps bare claude.
+  source "${SCRIPT_DIR:h}/lib/engine-cmd.zsh"
   echo "→ Launching ${AGENT} for interactive review..."
   case "$AGENT" in
     devin)
@@ -171,8 +174,7 @@ if [[ -n "$AGENT" ]] && [[ -f "$PROMPT_FILE" ]]; then
       ;;
     claude)
       command -v claude >/dev/null 2>&1 || { echo "claude CLI not found" >&2; exit 1; }
-      unset CLAUDECODE
-      claude --dangerously-skip-permissions "$(cat "$PROMPT_FILE")"
+      devkit_fire_claude "$(cat "$PROMPT_FILE")"
       exit 0
       ;;
     *) echo "Invalid agent: $AGENT" >&2; exit 1 ;;

@@ -65,15 +65,12 @@ if [[ "$LITE_UNDO" == true ]]; then
 fi
 
 # ── Pick agent ─────────────────────────────────────────────────────────────
+# Marker-driven default (see lib/engine-cmd.zsh): personal fork -> claude/clscb,
+# unmarked twin -> legacy devin-then-claude. Sets DEVKIT_DEFAULT_AGENT and
+# DEVKIT_CLAUDE_LAUNCHER, and defines devkit_fire_claude.
+source "${SCRIPT_DIR:h}/lib/engine-cmd.zsh"
 if [[ -z "$AGENT" ]]; then
-  if command -v devin >/dev/null 2>&1; then
-    AGENT="devin"
-  elif command -v claude >/dev/null 2>&1; then
-    AGENT="claude"
-  else
-    echo "Neither devin nor claude CLI found. Install one." >&2
-    exit 1
-  fi
+  AGENT="$DEVKIT_DEFAULT_AGENT"
 fi
 
 case "$AGENT" in
@@ -111,9 +108,8 @@ case "$AGENT" in
     rm -f "$PROMPT_TMP"
     ;;
   claude)
-    echo "→ Starting Claude (dangerously-skip-permissions, non-interactive)..."
+    echo "→ Starting Claude via ${DEVKIT_CLAUDE_LAUNCHER} (dangerously-skip-permissions)..."
     cd "$TARGET_CWD"
-    unset CLAUDECODE
-    claude --dangerously-skip-permissions "$FULL_PROMPT"
+    devkit_fire_claude "$FULL_PROMPT"
     ;;
 esac
