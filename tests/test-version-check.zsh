@@ -172,6 +172,27 @@ test_render_banner_update_available() {
 
 test_render_banner_update_available
 
+test_render_banner_respects_cmd_prefix() {
+  local out
+  # WB_CMD_PREFIX set -> command is prefixed (per.wb.upgrade), never the
+  # unprefixed twin alias.
+  out="$(WB_CMD_PREFIX=per. _wb_render_banner wb 1.0.0 1.1.0 "https://x/cl")"
+  case "$out" in
+    *"Run per.wb.upgrade."*) ;;
+    *) print -r -- "FAIL: banner ignored WB_CMD_PREFIX — got '$out'"; exit 1 ;;
+  esac
+  # WB_CMD_PREFIX unset -> unprefixed (twin / Invenco install) unchanged.
+  unset WB_CMD_PREFIX
+  out="$(_wb_render_banner wb 1.0.0 1.1.0 "https://x/cl")"
+  case "$out" in
+    *"Run wb.upgrade."*) ;;
+    *) print -r -- "FAIL: banner should be unprefixed when WB_CMD_PREFIX unset — got '$out'"; exit 1 ;;
+  esac
+  print -r -- "PASS: banner honors WB_CMD_PREFIX (per.wb.upgrade) and stays unprefixed when unset"
+}
+
+test_render_banner_respects_cmd_prefix
+
 test_versioncheck_emits_banner_on_upgrade_available() {
   local cachedir respdir clonedir
   cachedir="$(mktemp -d)"
@@ -288,6 +309,28 @@ test_versioncheck_fires_bootstrap_nag_when_local_is_zero() {
 }
 
 test_versioncheck_fires_bootstrap_nag_when_local_is_zero
+
+test_bootstrap_nag_respects_cmd_prefix() {
+  # The bootstrap flag lives under WB_UPDATES_CACHE_DIR; use a fresh dir per
+  # call so the one-shot nag actually fires.
+  local cd out
+  cd="$(mktemp -d)"
+  out="$(WB_UPDATES_CACHE_DIR="$cd" WB_CMD_PREFIX=per. _wb_emit_bootstrap_nag wb 2>&1)"
+  case "$out" in
+    *"Run per.wb.upgrade"*) ;;
+    *) print -r -- "FAIL: bootstrap nag ignored WB_CMD_PREFIX — got '$out'"; rm -rf "$cd"; exit 1 ;;
+  esac
+  rm -rf "$cd"; cd="$(mktemp -d)"
+  out="$(WB_UPDATES_CACHE_DIR="$cd" _wb_emit_bootstrap_nag wb 2>&1)"
+  case "$out" in
+    *"Run wb.upgrade"*) ;;
+    *) print -r -- "FAIL: bootstrap nag should be unprefixed when WB_CMD_PREFIX unset — got '$out'"; rm -rf "$cd"; exit 1 ;;
+  esac
+  rm -rf "$cd"
+  print -r -- "PASS: bootstrap nag honors WB_CMD_PREFIX (per.wb.upgrade) and stays unprefixed when unset"
+}
+
+test_bootstrap_nag_respects_cmd_prefix
 
 # ── Issue #17: clone discoverable without DEVKIT_CLONE env ────────────────
 # Symptom: user runs `devkit upgrade` / `devkit doctor` in a shell that has

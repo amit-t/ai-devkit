@@ -3,6 +3,10 @@
 .tmp/
 *.local.*
 
+# Per-install command-prefix marker written by install.zsh (version-check
+# launchers read it). Install-specific; never committed.
+/.devkit-cmd-prefix
+
 # install.zsh creates these as engine-internal skill-symlink mirrors of
 # skills/repo-context-scan. Symlinks contain absolute paths; never commit.
 /.claude/

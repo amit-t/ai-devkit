@@ -109,17 +109,16 @@ WB_DIR="$(_find_wb_root)" || {
 
 cd "$WB_DIR"
 
-# ── Version-check preamble ──────────────────────────────────────────────────
+# ── Version-check preamble (prefix-aware; see lib/versioncheck-launch.zsh) ───
 # Resolve the nag against the workbench root (WB_DIR), not the invocation cwd.
 # Running wb.upgrade from a subdirectory previously made the version check read
 # a non-existent ${PWD}/.workbench-state/template-version.json, report local
 # version 0.0.0, and fire a false "update available" banner on an up-to-date wb.
-LIBVC="${HOME}/.local/share/wb-versioncheck/version-check.sh"
-if [[ -f "$LIBVC" ]]; then
-  # shellcheck disable=SC1090
-  _VERCHECK_LIB_DIR_OVERRIDE="${LIBVC:h}" . "$LIBVC"
+_VC_LAUNCH="${SCRIPT_DIR:h}/lib/versioncheck-launch.zsh"
+if [[ -f "$_VC_LAUNCH" ]]; then
+  DEVKIT_ROOT="${SCRIPT_DIR:h}" source "$_VC_LAUNCH"
   WB_TEMPLATE_VERSION_FILE="${WB_DIR}/.workbench-state/template-version.json" \
-    _wb_versioncheck wb || true
+    _wb_launch_versioncheck wb || true
 fi
 
 source ./project.conf

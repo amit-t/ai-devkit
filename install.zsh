@@ -105,6 +105,15 @@ printf '%s\n' "$SCRIPT_DIR" > "$DEVKIT_CLONE_STATE"
 chmod 0644 "$DEVKIT_CLONE_STATE"
 ok "persisted clone path: $DEVKIT_CLONE_STATE"
 
+# Record this install's command prefix as a clone-local marker so the
+# version-check launchers (init/join/update.zsh) resolve the correct state-dir
+# tag + WB_CMD_PREFIX without re-sourcing ~/.zprofile. Empty file = unprefixed
+# (twin) install. Parity-safe: each fork writes its own value.
+DEVKIT_PREFIX_MARKER="$SCRIPT_DIR/.devkit-cmd-prefix"
+printf '%s\n' "$CMD_PREFIX" > "$DEVKIT_PREFIX_MARKER"
+chmod 0644 "$DEVKIT_PREFIX_MARKER"
+ok "recorded command prefix marker: $DEVKIT_PREFIX_MARKER (${CMD_PREFIX:-<none>})"
+
 # ── {ENV_NS}DEVKIT_CLONE in .zprofile ──────────────────────────────────────
 ZPROFILE="${HOME}/.zprofile"
 CLONE_VAR="${ENV_NS}DEVKIT_CLONE"

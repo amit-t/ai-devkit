@@ -74,6 +74,11 @@ refute_grep  "$SANDBOX_HOME/.zprofile" "export DEVKIT_CLONE="      "bare DEVKIT_
 assert_file  "$SANDBOX_HOME/.local/share/per-wb-versioncheck/version-check.sh" "per-tagged version-check lib"
 refute_file  "$SANDBOX_HOME/.local/share/wb-versioncheck/version-check.sh"     "default version-check lib"
 
+# Clone-local command-prefix marker recorded so the version-check launchers
+# resolve the per-tagged lib + WB_CMD_PREFIX. Written to the clone root
+# ($REPO_ROOT here), gitignored.
+assert_grep  "$REPO_ROOT/.devkit-cmd-prefix" "per." ".devkit-cmd-prefix marker = per."
+
 # Alias registered under the prefixed name.
 assert_grep "$SANDBOX_HOME/.zshrc" "alias per.init.wb=" "per.init.wb alias registered"
 

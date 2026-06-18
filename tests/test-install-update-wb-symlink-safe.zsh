@@ -15,7 +15,21 @@ SCRIPT_DIR="${0:A:h}"
 REPO_ROOT="${SCRIPT_DIR}/.."
 
 scratch="$(mktemp -d)"
-trap "rm -rf '$scratch'" EXIT
+
+# This test runs the real install.zsh with `--prefix ''`, which rewrites the
+# clone-local .devkit-cmd-prefix marker to empty. Snapshot + restore it so the
+# developer's personal (per.) marker survives the test run.
+PREFIX_MARKER="${REPO_ROOT}/.devkit-cmd-prefix"
+PREFIX_MARKER_BAK=""
+[[ -f "$PREFIX_MARKER" ]] && PREFIX_MARKER_BAK="$(cat "$PREFIX_MARKER")"
+restore_marker() {
+  if [[ -n "$PREFIX_MARKER_BAK" ]]; then
+    print -r -- "$PREFIX_MARKER_BAK" > "$PREFIX_MARKER"
+  else
+    rm -f "$PREFIX_MARKER"
+  fi
+}
+trap "rm -rf '$scratch'; restore_marker" EXIT
 
 real_update_zsh="${REPO_ROOT}/update-workbench/update.zsh"
 expected_sha="$(shasum -a 256 "$real_update_zsh" | cut -d' ' -f1)"
