@@ -3,6 +3,25 @@
 All notable changes to ai-devkit are documented here. release-please appends entries on every merge to `main` based on Conventional Commit messages.
 
 
+## [1.7.0](https://github.com/amit-t/ai-devkit/compare/v1.6.0...v1.7.0) (2026-06-18)
+
+
+### Features
+
+* **diverge:** per. command prefix + drop Invenco refs ([99ceb3e](https://github.com/amit-t/ai-devkit/commit/99ceb3e967d39d1f9450496ed84bedbd67b16a2a))
+* **diverge:** per. command prefix for clone coexistence; drop Invenco refs ([0439df7](https://github.com/amit-t/ai-devkit/commit/0439df76659ef568789b75895f3a2f3477b08158))
+* **engine:** default to Claude via clscb on personal fork ([#44](https://github.com/amit-t/ai-devkit/issues/44)) ([71c772a](https://github.com/amit-t/ai-devkit/commit/71c772aad65e1d31f1b9be19a408143cb6044a4e))
+* **install:** default command prefix to per. on personal fork ([#42](https://github.com/amit-t/ai-devkit/issues/42)) ([29f2fde](https://github.com/amit-t/ai-devkit/commit/29f2fde01c4c43308939288f45af10226036e913))
+* route runtime ralph calls to per.ralph via .ralph-prefix marker ([0646808](https://github.com/amit-t/ai-devkit/commit/064680823365a50f1335a53ead4dddc705040cf0))
+
+
+### Bug Fixes
+
+* **release:** run release-please only on origin ([8f78aee](https://github.com/amit-t/ai-devkit/commit/8f78aee716c9ab010d9874ca1469dd0a3c03d34e))
+* **release:** run release-please only on origin ([4c7c9f0](https://github.com/amit-t/ai-devkit/commit/4c7c9f0d3bd178269d3d659a7fea066fc71557bb))
+* **update:** read template_owned from upstream manifest ([#43](https://github.com/amit-t/ai-devkit/issues/43)) ([d4fb5ce](https://github.com/amit-t/ai-devkit/commit/d4fb5ceb69fb322576e32183d6404e242741029b))
+* **versioncheck:** prefix-aware upgrade banner + launcher lib selection ([#45](https://github.com/amit-t/ai-devkit/issues/45)) ([ce37673](https://github.com/amit-t/ai-devkit/commit/ce376731835ecc0502dfcab4574380872a4cc345))
+
 ## [1.6.0](https://github.com/amit-t/ai-devkit/compare/v1.5.0...v1.6.0) (2026-06-06)
 
 
