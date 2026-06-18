@@ -10,12 +10,11 @@
 
 set -euo pipefail
 
-# ── Version-check preamble ──────────────────────────────────────────────────
-LIBVC="${HOME}/.local/share/wb-versioncheck/version-check.sh"
-if [[ -f "$LIBVC" ]]; then
-  # shellcheck disable=SC1090
-  _VERCHECK_LIB_DIR_OVERRIDE="${LIBVC:h}" . "$LIBVC"
-  _wb_versioncheck devkit || true
+# ── Version-check preamble (prefix-aware; see lib/versioncheck-launch.zsh) ───
+_VC_LAUNCH="${0:A:h:h}/lib/versioncheck-launch.zsh"
+if [[ -f "$_VC_LAUNCH" ]]; then
+  DEVKIT_ROOT="${0:A:h:h}" source "$_VC_LAUNCH"
+  _wb_launch_versioncheck devkit || true
 fi
 
 SCRIPT_DIR="${0:A:h}"

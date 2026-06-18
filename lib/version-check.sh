@@ -287,6 +287,13 @@ _wb_render_banner() {
     wb)     upgrade_cmd="wb.upgrade"     ;;
     *)      upgrade_cmd="${tool}.upgrade" ;;
   esac
+  # Prefix the upgrade command on a namespaced install (e.g. `--prefix per.`)
+  # so the banner names the command the caller actually has on PATH
+  # (per.wb.upgrade), never the unprefixed alias that belongs to the other
+  # twin. WB_CMD_PREFIX is set by the caller (workbench aliases.sh, devkit
+  # init/join/update launchers). Unset -> no prefix (unchanged for the
+  # unprefixed/Invenco install).
+  upgrade_cmd="${WB_CMD_PREFIX:-}${upgrade_cmd}"
   printf "[%s v%s] update %s available. Run %s. Changelog: %s\n" \
     "$tool" "$local_v" "$latest" "$upgrade_cmd" "$changelog"
 }
