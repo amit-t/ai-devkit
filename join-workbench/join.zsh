@@ -13,7 +13,12 @@ set -euo pipefail
 # ── Version-check preamble (prefix-aware; see lib/versioncheck-launch.zsh) ───
 _VC_LAUNCH="${0:A:h:h}/lib/versioncheck-launch.zsh"
 if [[ -f "$_VC_LAUNCH" ]]; then
-  DEVKIT_ROOT="${0:A:h:h}" source "$_VC_LAUNCH"
+  # Plain assignment (not a prefix-on-`source`): in zsh a prefix-assign on the
+  # `source` builtin does not persist, so DEVKIT_ROOT would be unset by the time
+  # _wb_launch_versioncheck runs. The lib also self-resolves its root as a
+  # fallback, but keep the explicit override correct.
+  DEVKIT_ROOT="${0:A:h:h}"
+  source "$_VC_LAUNCH"
   _wb_launch_versioncheck devkit || true
 fi
 
