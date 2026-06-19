@@ -116,7 +116,13 @@ cd "$WB_DIR"
 # version 0.0.0, and fire a false "update available" banner on an up-to-date wb.
 _VC_LAUNCH="${SCRIPT_DIR:h}/lib/versioncheck-launch.zsh"
 if [[ -f "$_VC_LAUNCH" ]]; then
-  DEVKIT_ROOT="${SCRIPT_DIR:h}" source "$_VC_LAUNCH"
+  # Plain assignment (not a prefix-on-`source`): in zsh a prefix-assign on the
+  # `source` builtin does not persist, so DEVKIT_ROOT would be unset by the time
+  # _wb_launch_versioncheck runs — resolving a bogus root, an empty prefix, and
+  # silently loading the unprefixed (company) versioncheck lib + shared cache.
+  # The lib also self-resolves its root as a fallback, but keep the override sane.
+  DEVKIT_ROOT="${SCRIPT_DIR:h}"
+  source "$_VC_LAUNCH"
   WB_TEMPLATE_VERSION_FILE="${WB_DIR}/.workbench-state/template-version.json" \
     _wb_launch_versioncheck wb || true
 fi
