@@ -43,6 +43,12 @@ if [[ -z "$CLONE" ]]; then
   CLONE="$(cd "${SCRIPT_DIR}/.." && pwd -P)"
 fi
 
+# Helpers in lib/version-check.sh derive the clone from <TOOL>_CLONE with no
+# SCRIPT_DIR fallback. Without this export an unset DEVKIT_CLONE makes
+# _wb_local_version return "0.0.0" (phantom upgrade) and _wb_record_prior
+# return 1 (silent set -e death after the confirm prompt).
+export DEVKIT_CLONE="$CLONE"
+
 if [[ ! -d "$CLONE/.git" ]]; then
   print -r -- "ai-devkit clone not found at $CLONE. Set DEVKIT_CLONE." >&2
   exit 1
@@ -118,7 +124,7 @@ if ! $YES; then
   fi
 fi
 
-_wb_record_prior devkit
+_wb_record_prior devkit || print -r -- "[devkit] warning: could not record prior version for rollback" >&2
 git -C "$CLONE" pull --rebase -q origin main
 if ! $SKIP_INSTALL && [[ -x "$CLONE/install.zsh" ]]; then
   "$CLONE/install.zsh"
