@@ -3,6 +3,14 @@
 All notable changes to ai-devkit are documented here. release-please appends entries on every merge to `main` based on Conventional Commit messages.
 
 
+## [1.7.1](https://github.com/amit-t/ai-devkit/compare/v1.7.0...v1.7.1) (2026-06-29)
+
+
+### Bug Fixes
+
+* **upgrade:** export DEVKIT_CLONE so version-check helpers see the clone ([#47](https://github.com/amit-t/ai-devkit/issues/47)) ([0d3d376](https://github.com/amit-t/ai-devkit/commit/0d3d3763ea279ca636cbfb0490be3e432d0000be))
+* **versioncheck:** persist DEVKIT_ROOT + namespace update cache per fork ([#46](https://github.com/amit-t/ai-devkit/issues/46)) ([240487b](https://github.com/amit-t/ai-devkit/commit/240487b2a09d55704075ec8156549c58593cb497))
+
 ## [1.7.0](https://github.com/amit-t/ai-devkit/compare/v1.6.0...v1.7.0) (2026-06-18)
 
 
